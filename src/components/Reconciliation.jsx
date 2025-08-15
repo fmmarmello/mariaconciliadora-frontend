@@ -1,0 +1,317 @@
+import { useState, useEffect } from 'react'
+import { Button } from '@/components/ui/button.jsx'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx'
+import { Alert, AlertDescription } from '@/components/ui/alert.jsx'
+import { Progress } from '@/components/ui/progress.jsx'
+import { Badge } from '@/components/ui/badge.jsx'
+import { 
+  CheckCircle, 
+  XCircle, 
+  Clock, 
+  RefreshCw, 
+  BarChart3,
+  Calendar,
+  AlertTriangle
+} from 'lucide-react'
+import { 
+  LineChart, 
+  Line, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer,
+  BarChart,
+  Bar
+} from 'recharts'
+
+const Reconciliation = () => {
+  const [pendingRecords, setPendingRecords] = useState([])
+  const [report, setReport] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [reconciling, setReconciling] = useState(false)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    fetchPendingReconciliations()
+    fetchReconciliationReport()
+  }, [])
+
+  const fetchPendingReconciliations = async () => {
+    try {
+      const response = await fetch('/api/reconciliation/pending')
+      const data = await response.json()
+      
+      if (data.success) {
+        setPendingRecords(data.data.records)
+      }
+    } catch (err) {
+      setError('Erro ao carregar reconciliações pendentes')
+    }
+  }
+
+  const fetchReconciliationReport = async () => {
+    try {
+      const response = await fetch('/api/reconciliation/report')
+      const data = await response.json()
+      
+      if (data.success) {
+        setReport(data.data)
+      }
+    } catch (err) {
+      setError('Erro ao carregar relatório de reconciliação')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const startReconciliation = async () => {
+    setReconciling(true)
+    setError(null)
+    
+    try {
+      const response = await fetch('/api/reconciliation', {
+        method: 'POST'
+      })
+      
+      const data = await response.json()
+      
+      if (data.success) {
+        // Atualiza os dados após a reconciliação
+        fetchPendingReconciliations()
+        fetchReconciliationReport()
+      } else {
+        setError(data.error || 'Erro ao iniciar reconciliação')
+      }
+    } catch (err) {
+      setError('Erro de conexão. Verifique se o servidor está rodando.')
+    } finally {
+      setReconciling(false)
+    }
+  }
+
+  const confirmReconciliation = async (reconciliationId) => {
+    try {
+      const response = await fetch(`/api/reconciliation/${reconciliationId}/confirm`, {
+        method: 'POST'
+      })
+      
+      const data = await response.json()
+      
+      if (data.success) {
+        // Atualiza os dados após a confirmação
+        fetchPendingReconciliations()
+        fetchReconciliationReport()
+      } else {
+        setError(data.error || 'Erro ao confirmar reconciliação')
+      }
+    } catch (err) {
+      setError('Erro de conexão. Verifique se o servidor está rodando.')
+    }
+  }
+
+  const rejectReconciliation = async (reconciliationId) => {
+    try {
+      const response = await fetch(`/api/reconciliation/${reconciliationId}/reject`, {
+        method: 'POST'
+      })
+      
+      const data = await response.json()
+      
+      if (data.success) {
+        // Atualiza os dados após a rejeição
+        fetchPendingReconciliations()
+        fetchReconciliationReport()
+      } else {
+        setError(data.error || 'Erro ao rejeitar reconciliação')
+      }
+    } catch (err) {
+      setError('Erro de conexão. Verifique se o servidor está rodando.')
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex justify-center py-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Resumo */}
+      {report && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <BarChart3 className="h-5 w-5 mr-2" />
+              Resumo de Reconciliação
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+              <div className="bg-blue-50 p-4 rounded-lg text-center">
+                <div className="text-2xl font-bold text-blue-900">{report.summary.total_records}</div>
+                <div className="text-sm text-blue-700">Total</div>
+              </div>
+              
+              <div className="bg-green-50 p-4 rounded-lg text-center">
+                <div className="text-2xl font-bold text-green-900">{report.summary.confirmed}</div>
+                <div className="text-sm text-green-700">Confirmadas</div>
+              </div>
+              
+              <div className="bg-yellow-50 p-4 rounded-lg text-center">
+                <div className="text-2xl font-bold text-yellow-900">{report.summary.pending}</div>
+                <div className="text-sm text-yellow-700">Pendentes</div>
+              </div>
+              
+              <div className="bg-red-50 p-4 rounded-lg text-center">
+                <div className="text-2xl font-bold text-red-900">{report.summary.rejected}</div>
+                <div className="text-sm text-red-700">Rejeitadas</div>
+              </div>
+              
+              <div className="bg-purple-50 p-4 rounded-lg text-center">
+                <div className="text-2xl font-bold text-purple-900">
+                  {Math.round(report.summary.reconciliation_rate * 100)}%
+                </div>
+                <div className="text-sm text-purple-700">Taxa</div>
+              </div>
+            </div>
+            
+            <div className="mt-4 pt-4 border-t">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-gray-700">
+                  Valor Reconciliado: R$ {report.financials.total_reconciled_value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </span>
+                <Button 
+                  onClick={startReconciliation} 
+                  disabled={reconciling}
+                  variant="outline"
+                >
+                  {reconciling ? (
+                    <>
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      Reconciliando...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      Iniciar Reconciliação
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {error && (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      {/* Reconciliações Pendentes */}
+      {pendingRecords.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Clock className="h-5 w-5 mr-2" />
+              Reconciliações Pendentes
+            </CardTitle>
+            <CardDescription>
+              {pendingRecords.length} correspondências aguardando confirmação
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {pendingRecords.map((record) => (
+                <div key={record.id} className="border rounded-lg p-4">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <Badge variant="secondary">
+                          Score: {Math.round(record.match_score * 100)}%
+                        </Badge>
+                        <Badge variant="outline">
+                          ID: {record.id}
+                        </Badge>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <h4 className="font-medium text-sm mb-1">Transação Bancária</h4>
+                          <p className="text-sm text-gray-600">
+                            {record.bank_transaction?.description}
+                          </p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            {record.bank_transaction?.bank_name} • {new Date(record.bank_transaction?.date).toLocaleDateString('pt-BR')}
+                          </p>
+                          <p className="text-sm font-medium mt-1">
+                            R$ {Math.abs(record.bank_transaction?.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </p>
+                        </div>
+                        
+                        <div>
+                          <h4 className="font-medium text-sm mb-1">Entrada Financeira</h4>
+                          <p className="text-sm text-gray-600">
+                            {record.company_entry?.description}
+                          </p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            {record.company_entry?.category} • {new Date(record.company_entry?.date).toLocaleDateString('pt-BR')}
+                          </p>
+                          <p className="text-sm font-medium mt-1">
+                            R$ {Math.abs(record.company_entry?.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex space-x-2">
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        onClick={() => confirmReconciliation(record.id)}
+                      >
+                        <CheckCircle className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="destructive" 
+                        onClick={() => rejectReconciliation(record.id)}
+                      >
+                        <XCircle className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Mensagem quando não há pendências */}
+      {pendingRecords.length === 0 && !reconciling && (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <CheckCircle className="h-12 w-12 text-green-500 mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhuma reconciliação pendente</h3>
+            <p className="text-gray-500 text-center mb-4">
+              Todas as correspondências foram confirmadas ou rejeitadas.
+            </p>
+            <Button onClick={startReconciliation} variant="outline">
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Iniciar Nova Reconciliação
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  )
+}
+
+export default Reconciliation

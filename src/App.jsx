@@ -38,6 +38,10 @@ import './App.css'
 import FileUpload from './components/FileUpload'
 import TransactionsList from './components/TransactionsList'
 import InsightsPanel from './components/InsightsPanel'
+import FinancialTracker from './components/FinancialTracker'
+import AITraining from './components/AITraining'
+import FinancialPredictions from './components/FinancialPredictions'
+import Reconciliation from './components/Reconciliation'
 
 function App() {
   const [summary, setSummary] = useState(null)
@@ -138,11 +142,14 @@ function App() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 lg:w-[400px]">
+          <TabsList className="grid w-full grid-cols-7 lg:w-[700px]">
             <TabsTrigger value="overview">Visão Geral</TabsTrigger>
             <TabsTrigger value="upload">Upload OFX</TabsTrigger>
             <TabsTrigger value="transactions">Transações</TabsTrigger>
-            <TabsTrigger value="insights">Insights IA</TabsTrigger>
+            <TabsTrigger value="financial">Financeiro</TabsTrigger>
+            <TabsTrigger value="ai-training">IA Treinamento</TabsTrigger>
+            <TabsTrigger value="predictions">Previsões</TabsTrigger>
+            <TabsTrigger value="reconciliation">Reconciliação</TabsTrigger>
           </TabsList>
 
           {/* Overview Tab */}
@@ -323,6 +330,26 @@ function App() {
           {/* Insights Tab */}
           <TabsContent value="insights">
             <InsightsPanel insights={insights} />
+          </TabsContent>
+          
+          {/* Financial Tracking Tab */}
+          <TabsContent value="financial">
+            <FinancialTracker />
+          </TabsContent>
+          
+          {/* AI Training Tab */}
+          <TabsContent value="ai-training">
+            <AITraining />
+          </TabsContent>
+          
+          {/* Predictions Tab */}
+          <TabsContent value="predictions">
+            <FinancialPredictions />
+          </TabsContent>
+          
+          {/* Reconciliation Tab */}
+          <TabsContent value="reconciliation">
+            <Reconciliation />
           </TabsContent>
         </Tabs>
       </main>
