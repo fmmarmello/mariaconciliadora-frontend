@@ -21,6 +21,7 @@ import {
   BarChart,
   Bar
 } from 'recharts'
+import API_CONFIG from '@/config/api.js'
 
 const FinancialPredictions = () => {
   const [predictions, setPredictions] = useState(null)
@@ -37,7 +38,7 @@ const FinancialPredictions = () => {
     setError(null)
     
     try {
-      const response = await fetch(`/api/ai/predictions?periods=${timeframe}`)
+      const response = await fetch(API_CONFIG.getApiUrl(`api/ai/predictions?periods=${timeframe}`))
       const data = await response.json()
       
       if (data.success) {

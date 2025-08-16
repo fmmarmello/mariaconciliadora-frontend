@@ -13,6 +13,7 @@ import {
   Building2
 } from 'lucide-react'
 
+import API_CONFIG from '@/config/api.js'
 const FileUpload = ({ onUploadSuccess }) => {
   const [dragActive, setDragActive] = useState(false)
   const [uploading, setUploading] = useState(false)
@@ -74,7 +75,7 @@ const FileUpload = ({ onUploadSuccess }) => {
       const formData = new FormData()
       formData.append('file', file)
 
-      const response = await fetch('/api/upload-ofx', {
+      const response = await fetch(API_CONFIG.getApiUrl('api/upload-ofx'), {
         method: 'POST',
         body: formData
       })

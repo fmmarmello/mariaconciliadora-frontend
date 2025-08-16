@@ -32,6 +32,7 @@ import {
   BarChart,
   Bar
 } from 'recharts'
+import API_CONFIG from '@/config/api.js'
 import './App.css'
 
 // Componentes
@@ -61,7 +62,7 @@ function App() {
 
   const fetchSummary = async () => {
     try {
-      const response = await fetch('/api/summary')
+      const response = await fetch(API_CONFIG.getApiUrl('api/summary'))
       const data = await response.json()
       if (data.success) {
         setSummary(data.data)
@@ -73,7 +74,7 @@ function App() {
 
   const fetchInsights = async () => {
     try {
-      const response = await fetch('/api/insights')
+      const response = await fetch(API_CONFIG.getApiUrl('api/insights'))
       const data = await response.json()
       if (data.success) {
         setInsights(data.data)
@@ -87,7 +88,7 @@ function App() {
 
   const fetchTransactions = async () => {
     try {
-      const response = await fetch('/api/transactions?limit=50')
+      const response = await fetch(API_CONFIG.getApiUrl('api/transactions?limit=50'))
       const data = await response.json()
       if (data.success) {
         setTransactions(data.data.transactions)

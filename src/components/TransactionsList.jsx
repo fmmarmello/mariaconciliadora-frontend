@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input.jsx'
 import { Badge } from '@/components/ui/badge.jsx'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select.jsx'
+import API_CONFIG from '@/config/api.js'
 import { 
   Search, 
   Filter, 
@@ -53,7 +54,7 @@ const TransactionsList = ({ transactions: initialTransactions }) => {
         offset: 0
       })
 
-      const response = await fetch(`/api/transactions?${queryParams}`)
+      const response = await fetch(API_CONFIG.getApiUrl(`api/transactions?${queryParams}`))
       const data = await response.json()
       
       if (data.success) {

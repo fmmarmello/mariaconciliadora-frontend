@@ -18,6 +18,7 @@ import {
   RefreshCw,
   MessageSquare
 } from 'lucide-react'
+import API_CONFIG from '@/config/api.js'
 import { 
   LineChart, 
   Line, 
@@ -47,7 +48,7 @@ const InsightsPanel = ({ insights: initialInsights }) => {
   const fetchInsights = async () => {
     setLoading(true)
     try {
-      const response = await fetch('/api/insights')
+      const response = await fetch(API_CONFIG.getApiUrl('api/insights'))
       const data = await response.json()
       
       if (data.success) {
@@ -63,7 +64,7 @@ const InsightsPanel = ({ insights: initialInsights }) => {
   const fetchAiInsights = async () => {
     setAiLoading(true)
     try {
-      const response = await fetch('/api/ai-insights')
+      const response = await fetch(API_CONFIG.getApiUrl('api/ai-insights'))
       const data = await response.json()
       
       if (data.success) {
