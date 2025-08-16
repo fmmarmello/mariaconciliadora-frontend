@@ -90,6 +90,7 @@ const FileUpload = ({ onUploadSuccess }) => {
         setError(data.error || 'Erro ao processar arquivo')
       }
     } catch (err) {
+      setError(err.message || 'Erro ao enviar arquivo')
       setError('Erro de conexão. Verifique se o servidor está rodando.')
     } finally {
       setUploading(false)

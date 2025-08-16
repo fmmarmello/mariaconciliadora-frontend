@@ -24,9 +24,9 @@ const TransactionsList = ({ transactions: initialTransactions }) => {
   const [currentPage, setCurrentPage] = useState(1)
   const [filters, setFilters] = useState({
     search: '',
-    bank: '',
-    category: '',
-    type: '',
+    bank: 'all',
+    category: 'all',
+    type: 'all',
     startDate: '',
     endDate: ''
   })
@@ -77,17 +77,17 @@ const TransactionsList = ({ transactions: initialTransactions }) => {
     }
 
     // Filtro por banco
-    if (filters.bank) {
+    if (filters.bank && filters.bank !== 'all') {
       filtered = filtered.filter(t => t.bank_name === filters.bank)
     }
 
     // Filtro por categoria
-    if (filters.category) {
+    if (filters.category && filters.category !== 'all') {
       filtered = filtered.filter(t => t.category === filters.category)
     }
 
     // Filtro por tipo
-    if (filters.type) {
+    if (filters.type && filters.type !== 'all') {
       filtered = filtered.filter(t => t.transaction_type === filters.type)
     }
 
@@ -183,7 +183,7 @@ const TransactionsList = ({ transactions: initialTransactions }) => {
                   <SelectValue placeholder="Todos os bancos" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos os bancos</SelectItem>
+                  <SelectItem value="all">Todos os bancos</SelectItem>
                   {uniqueBanks.map(bank => (
                     <SelectItem key={bank} value={bank}>{bank}</SelectItem>
                   ))}
@@ -199,7 +199,7 @@ const TransactionsList = ({ transactions: initialTransactions }) => {
                   <SelectValue placeholder="Todas as categorias" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todas as categorias</SelectItem>
+                  <SelectItem value="all">Todas as categorias</SelectItem>
                   {uniqueCategories.map(category => (
                     <SelectItem key={category} value={category}>
                       {category.charAt(0).toUpperCase() + category.slice(1)}
@@ -217,7 +217,7 @@ const TransactionsList = ({ transactions: initialTransactions }) => {
                   <SelectValue placeholder="Todos os tipos" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos os tipos</SelectItem>
+                  <SelectItem value="all">Todos os tipos</SelectItem>
                   <SelectItem value="credit">Receitas</SelectItem>
                   <SelectItem value="debit">Gastos</SelectItem>
                 </SelectContent>
