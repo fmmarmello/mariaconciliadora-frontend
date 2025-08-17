@@ -35,6 +35,7 @@ import {
   Bar
 } from 'recharts'
 import API_CONFIG from '@/config/api.js'
+import FinancialTrackerCorrections from './FinancialTrackerCorrections.jsx'
 
 const FinancialTracker = () => {
   const [entries, setEntries] = useState([])
@@ -136,9 +137,15 @@ const FinancialTracker = () => {
 
       if (data.success) {
         setUploadResult(data)
-        // Atualiza os dados após o upload
-        fetchFinancialData()
-        fetchFinancialSummary()
+        // Se houver entradas incompletas, mantém o resultado para exibição
+        if (data.data.entries_incomplete > 0) {
+          setUploadResult(data)
+        } else {
+          // Caso contrário, limpa o resultado e atualiza os dados
+          setUploadResult(null)
+          fetchFinancialData()
+          fetchFinancialSummary()
+        }
       } else {
         setError(data.error || 'Erro ao processar arquivo')
       }
@@ -405,5 +412,22 @@ const FinancialTracker = () => {
     </div>
   )
 }
+
+// Função para lidar com o salvamento das correções
+const handleCorrectionsSaved = () => {
+  // Atualiza os dados após as correções serem salvas
+  fetchFinancialData()
+  fetchFinancialSummary()
+  // Limpa o resultado do upload
+  setUploadResult(null)
+}
+
+// Adiciona o componente de correção após a lista de entradas
+{uploadResult && uploadResult.data.entries_incomplete > 0 && (
+  <FinancialTrackerCorrections
+    incompleteEntries={uploadResult.data.incomplete_entries}
+    onCorrectionsSaved={handleCorrectionsSaved}
+  />
+)}
 
 export default FinancialTracker
