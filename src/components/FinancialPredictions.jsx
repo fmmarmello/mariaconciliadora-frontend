@@ -113,10 +113,10 @@ const FinancialPredictions = () => {
                     <span className="text-sm font-medium text-green-800">Receitas Totais</span>
                   </div>
                   <p className="text-2xl font-bold text-green-900 mt-1">
-                    R$ {predictions.historical_summary.total_income.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    R$ {predictions.historical_summary?.total_income?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                   </p>
                   <p className="text-xs text-green-700 mt-1">
-                    {predictions.historical_summary.period_months} meses de dados
+                    {predictions.historical_summary?.period_months} meses de dados
                   </p>
                 </div>
                 
@@ -126,15 +126,15 @@ const FinancialPredictions = () => {
                     <span className="text-sm font-medium text-red-800">Despesas Totais</span>
                   </div>
                   <p className="text-2xl font-bold text-red-900 mt-1">
-                    R$ {predictions.historical_summary.total_expenses.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    R$ {predictions.historical_summary?.total_expenses?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                   </p>
                   <p className="text-xs text-red-700 mt-1">
-                    {predictions.historical_summary.period_months} meses de dados
+                    {predictions.historical_summary?.period_months} meses de dados
                   </p>
                 </div>
                 
                 <div className={`${
-                  predictions.historical_summary.net_flow >= 0 
+                  predictions.historical_summary?.net_flow >= 0
                     ? 'bg-emerald-50' 
                     : 'bg-orange-50'
                 } p-4 rounded-lg`}>
@@ -143,14 +143,14 @@ const FinancialPredictions = () => {
                     <span className="text-sm font-medium text-blue-800">Saldo Líquido</span>
                   </div>
                   <p className={`text-2xl font-bold ${
-                    predictions.historical_summary.net_flow >= 0 
+                    predictions.historical_summary?.net_flow >= 0
                       ? 'text-emerald-900' 
                       : 'text-orange-900'
                   } mt-1`}>
-                    R$ {predictions.historical_summary.net_flow.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    R$ {predictions.historical_summary?.net_flow?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                   </p>
                   <p className="text-xs text-blue-700 mt-1">
-                    Média mensal: R$ {(predictions.historical_summary.net_flow / predictions.historical_summary.period_months).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    Média mensal: R$ {((predictions.historical_summary?.net_flow || 0) / (predictions.historical_summary?.period_months || 1)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                   </p>
                 </div>
               </div>
@@ -272,7 +272,7 @@ const FinancialPredictions = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {predictions.predictions.some(p => p.predicted_net_flow < 0) && (
+                {predictions?.predictions?.some(p => p.predicted_net_flow < 0) && (
                   <Alert className="border-orange-200 bg-orange-50">
                     <AlertTriangle className="h-4 w-4 text-orange-600" />
                     <AlertDescription className="text-orange-800">
@@ -282,7 +282,7 @@ const FinancialPredictions = () => {
                   </Alert>
                 )}
                 
-                {predictions.historical_summary.net_flow > 0 && (
+                {predictions?.historical_summary?.net_flow > 0 && (
                   <Alert className="border-green-200 bg-green-50">
                     <TrendingUp className="h-4 w-4 text-green-600" />
                     <AlertDescription className="text-green-800">
