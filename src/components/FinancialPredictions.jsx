@@ -41,12 +41,17 @@ const FinancialPredictions = () => {
       const response = await fetch(API_CONFIG.getApiUrl(`api/ai/predictions?periods=${timeframe}`))
       const data = await response.json()
       
+      console.log('API Response:', data); // Debug log
+      
       if (data.success) {
+        console.log('Predictions data:', data.data); // Debug log
+        console.log('Predictions.predictions:', data.data?.predictions); // Debug log
         setPredictions(data.data)
       } else {
         setError(data.error || 'Erro ao carregar previsões')
       }
     } catch (err) {
+      console.error('Fetch error:', err); // Debug log
       setError('Erro de conexão. Verifique se o servidor está rodando.')
     } finally {
       setLoading(false)
@@ -171,39 +176,39 @@ const FinancialPredictions = () => {
             <CardContent>
               <ResponsiveContainer width="100%" height={400}>
                 <LineChart
-                  data={predictions.predictions}
+                  data={predictions.predictions && Array.isArray(predictions.predictions) ? predictions.predictions : []}
                   margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="date" />
                   <YAxis />
-                  <Tooltip 
+                  <Tooltip
                     formatter={(value) => [`R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 'Valor']}
                     labelFormatter={(value) => `Período: ${value}`}
                   />
-                  <Line 
-                    type="monotone" 
-                    dataKey="predicted_income" 
-                    stroke="#10B981" 
-                    name="Receitas Previstas" 
+                  <Line
+                    type="monotone"
+                    dataKey="predicted_income"
+                    stroke="#10B981"
+                    name="Receitas Previstas"
                     strokeWidth={2}
                     dot={{ r: 4 }}
                     activeDot={{ r: 6 }}
                   />
-                  <Line 
-                    type="monotone" 
-                    dataKey="predicted_expenses" 
-                    stroke="#EF4444" 
-                    name="Despesas Previstas" 
+                  <Line
+                    type="monotone"
+                    dataKey="predicted_expenses"
+                    stroke="#EF4444"
+                    name="Despesas Previstas"
                     strokeWidth={2}
                     dot={{ r: 4 }}
                     activeDot={{ r: 6 }}
                   />
-                  <Line 
-                    type="monotone" 
-                    dataKey="predicted_net_flow" 
-                    stroke="#3B82F6" 
-                    name="Saldo Líquido Previsto" 
+                  <Line
+                    type="monotone"
+                    dataKey="predicted_net_flow"
+                    stroke="#3B82F6"
+                    name="Saldo Líquido Previsto"
                     strokeWidth={2}
                     dot={{ r: 4 }}
                     activeDot={{ r: 6 }}
@@ -236,26 +241,34 @@ const FinancialPredictions = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {predictions.predictions.map((prediction, index) => (
-                      <tr key={index} className="bg-white border-b hover:bg-gray-50">
-                        <td className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">
-                          {prediction.date}
-                        </td>
-                        <td className="px-6 py-4 text-green-600">
-                          R$ {prediction.predicted_income.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                        </td>
-                        <td className="px-6 py-4 text-red-600">
-                          R$ {prediction.predicted_expenses.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                        </td>
-                        <td className={`px-6 py-4 font-medium ${
-                          prediction.predicted_net_flow >= 0 
-                            ? 'text-emerald-600' 
-                            : 'text-orange-600'
-                        }`}>
-                          R$ {prediction.predicted_net_flow.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    {predictions.predictions && Array.isArray(predictions.predictions) ? (
+                      predictions.predictions.map((prediction, index) => (
+                        <tr key={index} className="bg-white border-b hover:bg-gray-50">
+                          <td className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">
+                            {prediction.date}
+                          </td>
+                          <td className="px-6 py-4 text-green-600">
+                            R$ {prediction.predicted_income.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </td>
+                          <td className="px-6 py-4 text-red-600">
+                            R$ {prediction.predicted_expenses.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </td>
+                          <td className={`px-6 py-4 font-medium ${
+                            prediction.predicted_net_flow >= 0
+                              ? 'text-emerald-600'
+                              : 'text-orange-600'
+                          }`}>
+                            R$ {prediction.predicted_net_flow.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan="4" className="px-6 py-4 text-center text-gray-500">
+                          Nenhuma previsão disponível
                         </td>
                       </tr>
-                    ))}
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -272,11 +285,11 @@ const FinancialPredictions = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {predictions?.predictions?.some(p => p.predicted_net_flow < 0) && (
+                {predictions?.predictions && Array.isArray(predictions.predictions) && predictions.predictions.some(p => p.predicted_net_flow < 0) && (
                   <Alert className="border-orange-200 bg-orange-50">
                     <AlertTriangle className="h-4 w-4 text-orange-600" />
                     <AlertDescription className="text-orange-800">
-                      <strong>Atenção:</strong> A previsão indica déficit em alguns meses. 
+                      <strong>Atenção:</strong> A previsão indica déficit em alguns meses.
                       Considere revisar suas despesas ou buscar novas fontes de receita.
                     </AlertDescription>
                   </Alert>

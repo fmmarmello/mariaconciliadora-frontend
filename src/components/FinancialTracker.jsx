@@ -34,6 +34,7 @@ import {
   BarChart,
   Bar
 } from 'recharts'
+import API_CONFIG from '@/config/api.js'
 
 const FinancialTracker = () => {
   const [entries, setEntries] = useState([])
@@ -55,7 +56,7 @@ const FinancialTracker = () => {
 
   const fetchFinancialData = async () => {
     try {
-      const response = await fetch('/api/company-financial?limit=50')
+      const response = await fetch(API_CONFIG.getApiUrl(`api/company-financial?limit=50`))
       const data = await response.json()
       if (data.success) {
         setEntries(data.data.entries)
@@ -67,7 +68,7 @@ const FinancialTracker = () => {
 
   const fetchFinancialSummary = async () => {
     try {
-      const response = await fetch('/api/company-financial/summary')
+      const response = await fetch(API_CONFIG.getApiUrl('api/company-financial/summary'))
       const data = await response.json()
       if (data.success) {
         setSummary(data.data)
@@ -126,7 +127,7 @@ const FinancialTracker = () => {
       const formData = new FormData()
       formData.append('file', file)
 
-      const response = await fetch('/api/upload-xlsx', {
+      const response = await fetch(API_CONFIG.getApiUrl('api/upload-xlsx'), {
         method: 'POST',
         body: formData
       })
@@ -178,7 +179,7 @@ const FinancialTracker = () => {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  R$ {summary.overview.total_income.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  R$ {summary.overview?.total_income?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || '0,00'}
                 </div>
               </CardContent>
             </Card>
@@ -190,14 +191,14 @@ const FinancialTracker = () => {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  R$ {summary.overview.total_expenses.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  R$ {summary.overview?.total_expenses?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || '0,00'}
                 </div>
               </CardContent>
             </Card>
 
             <Card className={`bg-gradient-to-r ${
-              summary.overview.net_flow >= 0 
-                ? 'from-emerald-500 to-emerald-600' 
+              (summary.overview?.net_flow || 0) >= 0
+                ? 'from-emerald-500 to-emerald-600'
                 : 'from-orange-500 to-orange-600'
             } text-white`}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -206,7 +207,7 @@ const FinancialTracker = () => {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  R$ {summary.overview.net_flow.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  R$ {summary.overview?.net_flow?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || '0,00'}
                 </div>
               </CardContent>
             </Card>
@@ -217,7 +218,7 @@ const FinancialTracker = () => {
                 <CreditCard className="h-4 w-4" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{summary.overview.total_entries}</div>
+                <div className="text-2xl font-bold">{summary.overview?.total_entries || 0}</div>
               </CardContent>
             </Card>
           </div>
