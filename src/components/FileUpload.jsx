@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 
 import API_CONFIG from '@/config/api.js'
+
 const FileUpload = ({ onUploadSuccess }) => {
   const [dragActive, setDragActive] = useState(false)
   const [uploading, setUploading] = useState(false)
@@ -59,8 +60,9 @@ const FileUpload = ({ onUploadSuccess }) => {
     setUploadResult(null)
 
     // Validações
-    if (!file.name.toLowerCase().endsWith('.ofx') && !file.name.toLowerCase().endsWith('.qfx')) {
-      setError('Apenas arquivos .ofx e .qfx são suportados.')
+    const fileExtension = file.name.toLowerCase().split('.').pop();
+    if (!['ofx', 'qfx', 'xlsx'].includes(fileExtension)) {
+      setError('Apenas arquivos .ofx, .qfx e .xlsx são suportados.')
       return
     }
 
@@ -75,7 +77,10 @@ const FileUpload = ({ onUploadSuccess }) => {
       const formData = new FormData()
       formData.append('file', file)
 
-      const response = await fetch(API_CONFIG.getApiUrl('api/upload-ofx'), {
+      // Determine the endpoint based on file extension
+      const endpoint = fileExtension === 'xlsx' ? 'api/upload-xlsx' : 'api/upload-ofx';
+      
+      const response = await fetch(API_CONFIG.getApiUrl(endpoint), {
         method: 'POST',
         body: formData
       })
@@ -88,11 +93,15 @@ const FileUpload = ({ onUploadSuccess }) => {
           onUploadSuccess()
         }
       } else {
-        setError(data.error || 'Erro ao processar arquivo')
+        // Handle file duplicate case
+        if (!data.success && data.data && data.data.file_duplicate) {
+          setError(`Arquivo já foi processado anteriormente. Data original: ${data.data.original_upload_date || 'desconhecida'}`)
+        } else {
+          setError(data.error || data.message || 'Erro ao processar arquivo')
+        }
       }
     } catch (err) {
       setError(err.message || 'Erro ao enviar arquivo')
-      setError('Erro de conexão. Verifique se o servidor está rodando.')
     } finally {
       setUploading(false)
     }
@@ -113,6 +122,9 @@ const FileUpload = ({ onUploadSuccess }) => {
           </CardTitle>
           <CardDescription>
             O Maria Conciliadora processa arquivos OFX dos seguintes bancos:
+            <p className="text-sm text-gray-600 mt-2">
+              Também é possível importar dados financeiros da empresa através de arquivos XLSX.
+            </p>
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -131,10 +143,10 @@ const FileUpload = ({ onUploadSuccess }) => {
         <CardHeader>
           <CardTitle className="flex items-center">
             <Upload className="h-5 w-5 mr-2" />
-            Upload de Arquivo OFX
+            Upload de Arquivo Bancário ou Financeiro
           </CardTitle>
           <CardDescription>
-            Arraste e solte seu arquivo OFX aqui ou clique para selecionar
+            Arraste e solte seu arquivo OFX ou XLSX aqui ou clique para selecionar
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -152,7 +164,7 @@ const FileUpload = ({ onUploadSuccess }) => {
             <input
               ref={fileInputRef}
               type="file"
-              accept=".ofx,.qfx"
+              accept=".ofx,.qfx,.xlsx"
               onChange={handleFileInput}
               className="hidden"
             />
@@ -162,7 +174,7 @@ const FileUpload = ({ onUploadSuccess }) => {
                 <Loader2 className="h-12 w-12 text-blue-500 mx-auto animate-spin" />
                 <div>
                   <p className="text-lg font-medium text-gray-900">Processando arquivo...</p>
-                  <p className="text-sm text-gray-500">Analisando transações e aplicando IA</p>
+                  <p className="text-sm text-gray-500">Analisando dados e aplicando IA</p>
                 </div>
                 <Progress value={75} className="w-full max-w-xs mx-auto" />
               </div>
@@ -171,10 +183,10 @@ const FileUpload = ({ onUploadSuccess }) => {
                 <FileText className="h-12 w-12 text-gray-400 mx-auto" />
                 <div>
                   <p className="text-lg font-medium text-gray-900">
-                    Selecione um arquivo OFX
+                    Selecione um arquivo OFX ou XLSX
                   </p>
                   <p className="text-sm text-gray-500">
-                    Formatos suportados: .ofx, .qfx (máx. 16MB)
+                    Formatos suportados: .ofx, .qfx, .xlsx (máx. 16MB)
                   </p>
                 </div>
                 <Button onClick={openFileDialog} disabled={uploading}>
@@ -194,13 +206,37 @@ const FileUpload = ({ onUploadSuccess }) => {
             <div className="space-y-2">
               <p className="font-medium">{uploadResult.message}</p>
               <div className="text-sm space-y-1">
-                <p>• Banco: {uploadResult.data.bank_name}</p>
-                <p>• Transações importadas: {uploadResult.data.transactions_imported}</p>
-                {uploadResult.data.duplicates_found > 0 && (
-                  <p>• Duplicatas encontradas: {uploadResult.data.duplicates_found}</p>
+                {uploadResult.data && (
+                  <>
+                    {uploadResult.data.bank_name && (
+                      <p>• Banco: {uploadResult.data.bank_name}</p>
+                    )}
+                    {uploadResult.data.items_imported && (
+                      <p>• Itens importados: {uploadResult.data.items_imported}</p>
+                    )}
+                    {uploadResult.data.duplicates_found > 0 && (
+                      <p>• Duplicatas encontradas: {uploadResult.data.duplicates_found}</p>
+                    )}
+                    {uploadResult.data.saved_count !== undefined && (
+                      <p>• Entradas salvas: {uploadResult.data.saved_count}</p>
+                    )}
+                    {uploadResult.data.duplicate_files_count !== undefined && (
+                      <p>• Arquivos duplicados detectados: {uploadResult.data.duplicate_files_count}</p>
+                    )}
+                    {uploadResult.data.duplicate_entries_count !== undefined && (
+                      <p>• Entradas duplicadas detectadas: {uploadResult.data.duplicate_entries_count}</p>
+                    )}
+                    {uploadResult.data.total_entries_processed !== undefined && (
+                      <p>• Total de entradas processadas: {uploadResult.data.total_entries_processed}</p>
+                    )}
+                    {uploadResult.data.summary && (
+                      <>
+                        <p>• Total de receitas: R$ {uploadResult.data.summary.total_credits.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                        <p>• Total de gastos: R$ {uploadResult.data.summary.total_debits.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                      </>
+                    )}
+                  </>
                 )}
-                <p>• Total de receitas: R$ {uploadResult.data.summary.total_credits.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
-                <p>• Total de gastos: R$ {uploadResult.data.summary.total_debits.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
               </div>
             </div>
           </AlertDescription>
@@ -218,28 +254,35 @@ const FileUpload = ({ onUploadSuccess }) => {
       {/* Instruções */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Como obter seu arquivo OFX?</CardTitle>
+          <CardTitle className="text-lg">Como obter seus arquivos?</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <h4 className="font-medium">Internet Banking</h4>
+              <h4 className="font-medium">Arquivos OFX (Bancos)</h4>
               <p className="text-sm text-gray-600">
                 Acesse o site do seu banco, vá em "Extratos" ou "Movimentação" e procure pela opção de exportar em formato OFX.
               </p>
             </div>
             <div className="space-y-2">
-              <h4 className="font-medium">Aplicativo Mobile</h4>
+              <h4 className="font-medium">Arquivos XLSX (Planilhas)</h4>
               <p className="text-sm text-gray-600">
-                Alguns bancos permitem exportar extratos em OFX diretamente pelo aplicativo móvel.
+                Exporte seus dados financeiros da empresa em formato Excel (.xlsx) com as colunas necessárias.
               </p>
             </div>
           </div>
           <Alert>
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              <strong>Dica:</strong> O arquivo OFX geralmente está disponível na seção de extratos ou relatórios do seu banco. 
+              <strong>Dica OFX:</strong> O arquivo OFX geralmente está disponível na seção de extratos ou relatórios do seu banco.
               Procure por "Exportar", "Download" ou "Formato OFX/Money".
+            </AlertDescription>
+          </Alert>
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              <strong>Dica XLSX:</strong> Certifique-se de que seu arquivo Excel contém as colunas de data, descrição e valor para
+              que possa ser processado corretamente.
             </AlertDescription>
           </Alert>
         </CardContent>

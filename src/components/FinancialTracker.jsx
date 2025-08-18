@@ -138,7 +138,7 @@ const FinancialTracker = () => {
       if (data.success) {
         setUploadResult(data)
         // Se houver entradas incompletas, mantém o resultado para exibição
-        if (data.data.entries_incomplete > 0) {
+        if (data.data.items_incomplete > 0) {
           setUploadResult(data)
         } else {
           // Caso contrário, limpa o resultado e atualiza os dados
@@ -357,7 +357,7 @@ const FinancialTracker = () => {
             <div className="space-y-2">
               <p className="font-medium">{uploadResult.message}</p>
               <div className="text-sm space-y-1">
-                <p>• Entradas importadas: {uploadResult.data.entries_imported}</p>
+                <p>• Itens importados: {uploadResult.data.items_imported}</p>
               </div>
             </div>
           </AlertDescription>
@@ -423,9 +423,9 @@ const handleCorrectionsSaved = () => {
 }
 
 // Adiciona o componente de correção após a lista de entradas
-{uploadResult && uploadResult.data.entries_incomplete > 0 && (
+{uploadResult && uploadResult.data.items_incomplete > 0 && (
   <FinancialTrackerCorrections
-    incompleteEntries={uploadResult.data.incomplete_entries}
+    incompleteEntries={uploadResult.data.incomplete_items}
     onCorrectionsSaved={handleCorrectionsSaved}
   />
 )}

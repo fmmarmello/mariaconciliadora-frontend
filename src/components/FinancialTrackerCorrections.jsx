@@ -241,7 +241,7 @@ const FinancialTrackerCorrections = ({ incompleteEntries, onCorrectionsSaved }) 
                   <div className="space-y-2">
                     <p className="font-medium">{saveResult.message}</p>
                     <p className="text-sm">
-                      {saveResult.data.entries_imported} entradas foram salvas com sucesso.
+                      {saveResult.data.items_imported} entradas foram salvas com sucesso.
                     </p>
                   </div>
                 </AlertDescription>
