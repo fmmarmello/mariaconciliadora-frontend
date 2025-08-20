@@ -34,7 +34,9 @@ export default function TestDataDeletion() {
       try {
         // We'll check the backend configuration by making a request to the test data endpoint
         // This is a simple way to determine if the feature is enabled
-        const response = await fetch(API_CONFIG.getApiUrl('api/test-data?mode=preview&days_old=30'));
+        const response = await fetch(API_CONFIG.getApiUrl('api/test-data?mode=preview&days_old=30'), {
+        method: 'DELETE'
+      }  );
         
         // If we get a 403 error, it means the feature is disabled
         if (response.status === 403) {
@@ -56,7 +58,9 @@ export default function TestDataDeletion() {
     setError(null);
     
     try {
-      const response = await fetch(API_CONFIG.getApiUrl(`api/test-data?mode=preview&days_old=${daysOld}`));
+      const response = await fetch(API_CONFIG.getApiUrl(`api/test-data?mode=preview&days_old=${daysOld}`), {
+        method: 'DELETE'
+      }  );
       const data = await response.json();
       
       if (data.success) {
@@ -78,7 +82,9 @@ export default function TestDataDeletion() {
     setError(null);
     
     try {
-      const response = await fetch(API_CONFIG.getApiUrl(`api/test-data?mode=confirmation&days_old=${daysOld}`));
+      const response = await fetch(API_CONFIG.getApiUrl(`api/test-data?mode=confirmation&days_old=${daysOld}`), {
+        method: 'DELETE'
+      });
       const data = await response.json();
       
       if (data.success) {
@@ -100,7 +106,9 @@ export default function TestDataDeletion() {
     setError(null);
     
     try {
-      const response = await fetch(API_CONFIG.getApiUrl(`api/test-data?mode=execution&days_old=${daysOld}&force=true`));
+      const response = await fetch(API_CONFIG.getApiUrl(`api/test-data?mode=execution&days_old=${daysOld}&force=true`), {
+        method: 'DELETE'
+      }  );
       const data = await response.json();
       
       if (data.success) {
