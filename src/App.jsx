@@ -43,6 +43,7 @@ import FinancialTracker from './components/FinancialTracker'
 import AITraining from './components/AITraining'
 import FinancialPredictions from './components/FinancialPredictions'
 import Reconciliation from './components/Reconciliation'
+import TestDataDeletion from './components/TestDataDeletion'
 
 function App() {
   const [summary, setSummary] = useState(null)
@@ -143,7 +144,7 @@ function App() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-7 lg:w-[700px]">
+          <TabsList className="grid w-full grid-cols-8 lg:w-[800px]">
             <TabsTrigger value="overview">Visão Geral</TabsTrigger>
             <TabsTrigger value="upload">Upload OFX</TabsTrigger>
             <TabsTrigger value="transactions">Transações</TabsTrigger>
@@ -151,6 +152,7 @@ function App() {
             <TabsTrigger value="ai-training">IA Treinamento</TabsTrigger>
             <TabsTrigger value="predictions">Previsões</TabsTrigger>
             <TabsTrigger value="reconciliation">Reconciliação</TabsTrigger>
+            <TabsTrigger value="test-data">Dados de Teste</TabsTrigger>
           </TabsList>
 
           {/* Overview Tab */}
@@ -351,6 +353,11 @@ function App() {
           {/* Reconciliation Tab */}
           <TabsContent value="reconciliation">
             <Reconciliation />
+          </TabsContent>
+          
+          {/* Test Data Deletion Tab */}
+          <TabsContent value="test-data">
+            <TestDataDeletion />
           </TabsContent>
         </Tabs>
       </main>

@@ -163,6 +163,14 @@ const FinancialTracker = () => {
     fileInput.onchange = handleFileInput
     fileInput.click()
   }
+// Função para lidar com o salvamento das correções
+  const handleCorrectionsSaved = () => {
+    // Atualiza os dados após as correções serem salvas
+    fetchFinancialData()
+    fetchFinancialSummary()
+    // Limpa o resultado do upload
+    setUploadResult(null)
+  }
 
   if (loading) {
     return (
@@ -409,25 +417,16 @@ const FinancialTracker = () => {
           </CardContent>
         </Card>
       )}
+      
+      {/* Componente de Correção */}
+      {uploadResult && uploadResult.data.items_incomplete > 0 && (
+        <FinancialTrackerCorrections
+          incompleteEntries={uploadResult.data.incomplete_items}
+          onCorrectionsSaved={handleCorrectionsSaved}
+        />
+      )}
     </div>
   )
 }
-
-// Função para lidar com o salvamento das correções
-const handleCorrectionsSaved = () => {
-  // Atualiza os dados após as correções serem salvas
-  fetchFinancialData()
-  fetchFinancialSummary()
-  // Limpa o resultado do upload
-  setUploadResult(null)
-}
-
-// Adiciona o componente de correção após a lista de entradas
-{uploadResult && uploadResult.data.items_incomplete > 0 && (
-  <FinancialTrackerCorrections
-    incompleteEntries={uploadResult.data.incomplete_items}
-    onCorrectionsSaved={handleCorrectionsSaved}
-  />
-)}
 
 export default FinancialTracker
