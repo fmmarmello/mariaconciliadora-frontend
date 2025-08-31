@@ -34,7 +34,7 @@ import {
   BarChart,
   Bar
 } from 'recharts'
-import API_CONFIG from '@/config/api.js'
+import { get, post, ApiError } from '@/services/apiService.js'
 import FinancialTrackerCorrections from './FinancialTrackerCorrections.jsx'
 
 const FinancialTracker = () => {
@@ -57,24 +57,32 @@ const FinancialTracker = () => {
 
   const fetchFinancialData = async () => {
     try {
-      const response = await fetch(API_CONFIG.getApiUrl(`api/company-financial?limit=50`))
-      const data = await response.json()
+      const data = await get('api/company-financial', { limit: 50 })
       if (data.success) {
         setEntries(data.data.entries)
       }
     } catch (error) {
+      if (error instanceof ApiError) {
+        setError(`Erro ao buscar dados financeiros: ${error.message}`)
+      } else {
+        setError('Erro de conexão ao buscar dados financeiros.')
+      }
       console.error('Erro ao buscar dados financeiros:', error)
     }
   }
 
   const fetchFinancialSummary = async () => {
     try {
-      const response = await fetch(API_CONFIG.getApiUrl('api/company-financial/summary'))
-      const data = await response.json()
+      const data = await get('api/company-financial/summary')
       if (data.success) {
         setSummary(data.data)
       }
     } catch (error) {
+      if (error instanceof ApiError) {
+        setError(`Erro ao buscar resumo financeiro: ${error.message}`)
+      } else {
+        setError('Erro de conexão ao buscar resumo financeiro.')
+      }
       console.error('Erro ao buscar resumo financeiro:', error)
     } finally {
       setLoading(false)
@@ -128,12 +136,7 @@ const FinancialTracker = () => {
       const formData = new FormData()
       formData.append('file', file)
 
-      const response = await fetch(API_CONFIG.getApiUrl('api/upload-xlsx'), {
-        method: 'POST',
-        body: formData
-      })
-
-      const data = await response.json()
+      const data = await post('api/upload-xlsx', formData, { 'Content-Type': undefined })
 
       if (data.success) {
         setUploadResult(data)
@@ -149,8 +152,12 @@ const FinancialTracker = () => {
       } else {
         setError(data.error || 'Erro ao processar arquivo')
       }
-    } catch (err) {
-      setError('Erro de conexão. Verifique se o servidor está rodando.')
+    } catch (error) {
+      if (error instanceof ApiError) {
+        setError(error.message)
+      } else {
+        setError('Erro de conexão. Verifique se o servidor está rodando.')
+      }
     } finally {
       setUploading(false)
     }

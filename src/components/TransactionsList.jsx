@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input.jsx'
 import { Badge } from '@/components/ui/badge.jsx'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select.jsx'
 import API_CONFIG from '@/config/api.js'
+import { get, ApiError } from '@/services/apiService.js'
 import { 
   Search, 
   Filter, 
@@ -54,14 +55,18 @@ const TransactionsList = ({ transactions: initialTransactions }) => {
         offset: 0
       })
 
-      const response = await fetch(API_CONFIG.getApiUrl(`api/transactions?${queryParams}`))
-      const data = await response.json()
+      const data = await get('api/transactions', queryParams.toString())
       
       if (data.success) {
         setTransactions(data.data.transactions)
       }
     } catch (error) {
-      console.error('Erro ao buscar transações:', error)
+      if (error instanceof ApiError) {
+        console.error('Erro na API ao buscar transações:', error.message, error.status, error.data)
+      } else {
+        console.error('Erro ao buscar transações:', error)
+      }
+      setTransactions([])
     } finally {
       setLoading(false)
     }

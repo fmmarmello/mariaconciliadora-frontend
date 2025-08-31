@@ -22,6 +22,7 @@ import {
   Bar
 } from 'recharts'
 import API_CONFIG from '@/config/api.js'
+import { get as apiServiceGet, ApiError } from '../services/apiService';
 
 const FinancialPredictions = () => {
   const [predictions, setPredictions] = useState(null)
@@ -38,21 +39,20 @@ const FinancialPredictions = () => {
     setError(null)
     
     try {
-      const response = await fetch(API_CONFIG.getApiUrl(`api/ai/predictions?periods=${timeframe}`))
-      const data = await response.json()
+      const data = await apiServiceGet('api/ai/predictions', { periods: timeframe });
       
       console.log('API Response:', data); // Debug log
       
-      if (data.success) {
-        console.log('Predictions data:', data.data); // Debug log
-        console.log('Predictions.predictions:', data.data?.predictions); // Debug log
-        setPredictions(data.data)
-      } else {
-        setError(data.error || 'Erro ao carregar previsões')
-      }
+      console.log('Predictions data:', data.data); // Debug log
+      console.log('Predictions.predictions:', data.data?.predictions); // Debug log
+      setPredictions(data.data)
     } catch (err) {
       console.error('Fetch error:', err); // Debug log
-      setError('Erro de conexão. Verifique se o servidor está rodando.')
+      if (err instanceof ApiError) {
+        setError(err.message || 'Erro ao carregar previsões');
+      } else {
+        setError('Erro de conexão. Verifique se o servidor está rodando.');
+      }
     } finally {
       setLoading(false)
     }

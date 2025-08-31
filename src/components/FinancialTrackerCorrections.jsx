@@ -14,6 +14,7 @@ import {
   RotateCcw
 } from 'lucide-react'
 import API_CONFIG from '@/config/api.js'
+import { post, ApiError } from '@/services/apiService';
 
 const FinancialTrackerCorrections = ({ incompleteEntries, onCorrectionsSaved }) => {
   const [corrections, setCorrections] = useState([])
@@ -51,36 +52,28 @@ const FinancialTrackerCorrections = ({ incompleteEntries, onCorrectionsSaved }) 
         .filter(entry => entry.corrected)
         .map(entry => {
           // Remove campos extras que não são necessários para o envio
-          const { row_number, error, corrected, ...cleanEntry } = entry
+          const { row_number: _row_number, error: _error, corrected: _corrected, ...cleanEntry } = entry
           return cleanEntry
         })
-
+ 
       if (correctedEntries.length === 0) {
         setError('Nenhuma correção foi feita.')
         return
       }
-
-      const response = await fetch(API_CONFIG.getApiUrl('api/upload-xlsx-corrected'), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ entries: correctedEntries })
-      })
-
-      const data = await response.json()
-
-      if (data.success) {
-        setSaveResult(data)
-        // Notifica o componente pai que as correções foram salvas
-        if (onCorrectionsSaved) {
-          onCorrectionsSaved()
-        }
-      } else {
-        setError(data.error || 'Erro ao salvar correções')
+ 
+      const data = await post('api/upload-xlsx-corrected', { entries: correctedEntries })
+ 
+      setSaveResult(data)
+      // Notifica o componente pai que as correções foram salvas
+      if (onCorrectionsSaved) {
+        onCorrectionsSaved()
       }
     } catch (err) {
-      setError('Erro de conexão. Verifique se o servidor está rodando.')
+      if (err instanceof ApiError) {
+        setError(err.message)
+      } else {
+        setError('Erro de conexão. Verifique se o servidor está rodando.')
+      }
     } finally {
       setSaving(false)
     }

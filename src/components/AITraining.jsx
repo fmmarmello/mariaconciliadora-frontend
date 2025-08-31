@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { post, ApiError } from '@/services/apiService';
 import { Button } from '@/components/ui/button.jsx'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx'
 import { Alert, AlertDescription } from '@/components/ui/alert.jsx'
@@ -48,49 +49,44 @@ const AITraining = () => {
       }, 500)
 
       // Chama a API para treinar o modelo
-      const response = await fetch('/api/ai/train', {
-        method: 'POST'
-      })
-
-      clearInterval(progressInterval)
+      const data = await post('api/ai/train');
+      clearInterval(progressInterval);
       
-      const data = await response.json()
-
       if (data.success) {
-        setTrainingStatus('completed')
-        setTrainingResult(data)
-        setAccuracy(data.accuracy * 100)
+        setTrainingStatus('completed');
+        setTrainingResult(data);
+        setAccuracy(data.accuracy * 100);
       } else {
-        setTrainingStatus('error')
-        setError(data.error || 'Erro ao treinar modelo')
+        setTrainingStatus('error');
+        setError(data.error || 'Erro ao treinar modelo');
       }
-    } catch (err) {
-      setTrainingStatus('error')
-      setError('Erro de conexão. Verifique se o servidor está rodando.')
+    } catch (error) {
+      setTrainingStatus('error');
+      if (error instanceof ApiError) {
+        setError(error.message);
+      } else {
+        setError('Erro de conexão. Verifique se o servidor está rodando.');
+      }
     }
   }
 
   const categorizeTest = async () => {
     try {
-      const response = await fetch('/api/ai/categorize-financial', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          description: 'Pagamento de fornecedor para compra de materiais'
-        })
-      })
-
-      const data = await response.json()
+      const data = await post('api/ai/categorize-financial', {
+        description: 'Pagamento de fornecedor para compra de materiais'
+      });
 
       if (data.success) {
-        alert(`Categoria sugerida: ${data.data.category}`)
+        alert(`Categoria sugerida: ${data.data.category}`);
       } else {
-        setError(data.error || 'Erro ao categorizar')
+        setError(data.error || 'Erro ao categorizar');
       }
-    } catch (err) {
-      setError('Erro de conexão. Verifique se o servidor está rodando.')
+    } catch (error) {
+      if (error instanceof ApiError) {
+        setError(error.message);
+      } else {
+        setError('Erro de conexão. Verifique se o servidor está rodando.');
+      }
     }
   }
 

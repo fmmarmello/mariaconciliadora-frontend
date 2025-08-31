@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 
 import API_CONFIG from '@/config/api.js'
+import { post, ApiError } from '@/services/apiService';
 
 const FileUpload = ({ onUploadSuccess }) => {
   const [dragActive, setDragActive] = useState(false)
@@ -80,28 +81,23 @@ const FileUpload = ({ onUploadSuccess }) => {
       // Determine the endpoint based on file extension
       const endpoint = fileExtension === 'xlsx' ? 'api/upload-xlsx' : 'api/upload-ofx';
       
-      const response = await fetch(API_CONFIG.getApiUrl(endpoint), {
-        method: 'POST',
-        body: formData
-      })
+      const data = await post(endpoint, formData, {'Content-Type': undefined});
 
-      const data = await response.json()
-
-      if (data.success) {
-        setUploadResult(data)
-        if (onUploadSuccess) {
-          onUploadSuccess()
-        }
-      } else {
-        // Handle file duplicate case
-        if (!data.success && data.data && data.data.file_duplicate) {
-          setError(`Arquivo já foi processado anteriormente. Data original: ${data.data.original_upload_date || 'desconhecida'}`)
-        } else {
-          setError(data.error || data.message || 'Erro ao processar arquivo')
-        }
+      setUploadResult(data)
+      if (onUploadSuccess) {
+        onUploadSuccess()
       }
     } catch (err) {
-      setError(err.message || 'Erro ao enviar arquivo')
+      if (err instanceof ApiError) {
+        // Handle file duplicate case
+        if (err.data && err.data.file_duplicate) {
+          setError(`Arquivo já foi processado anteriormente. Data original: ${err.data.original_upload_date || 'desconhecida'}`)
+        } else {
+          setError(err.message || 'Erro ao processar arquivo')
+        }
+      } else {
+        setError(err.message || 'Erro ao enviar arquivo')
+      }
     } finally {
       setUploading(false)
     }

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { remove, ApiError } from '@/services/apiService';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -15,7 +16,6 @@ import {
   FileText,
   Database
 } from 'lucide-react';
-import API_CONFIG from '@/config/api.js';
 
 export default function TestDataDeletion() {
   const [isEnabled, setIsEnabled] = useState(false);
@@ -34,19 +34,14 @@ export default function TestDataDeletion() {
       try {
         // We'll check the backend configuration by making a request to the test data endpoint
         // This is a simple way to determine if the feature is enabled
-        const response = await fetch(API_CONFIG.getApiUrl('api/test-data?mode=preview&days_old=30'), {
-        method: 'DELETE'
-      }  );
-        
-        // If we get a 403 error, it means the feature is disabled
-        if (response.status === 403) {
+        setIsEnabled(true);
+      } catch (error) {
+        if (error instanceof ApiError && error.status === 403) {
           setIsEnabled(false);
         } else {
-          setIsEnabled(true);
+          // If we can't reach the endpoint or other error, assume it's disabled
+          setIsEnabled(false);
         }
-      } catch (error) {
-        // If we can't reach the endpoint, assume it's disabled
-        setIsEnabled(false);
       }
     };
 
@@ -58,20 +53,16 @@ export default function TestDataDeletion() {
     setError(null);
     
     try {
-      const response = await fetch(API_CONFIG.getApiUrl(`api/test-data?mode=preview&days_old=${daysOld}`), {
-        method: 'DELETE'
-      }  );
-      const data = await response.json();
-      
-      if (data.success) {
-        setPreviewData(data.data);
-        setCurrentStep(1);
-      } else {
-        setError(data.error || 'Failed to fetch preview data');
-      }
+      const data = await remove('api/test-data', { mode: 'preview', days_old: daysOld });
+      setPreviewData(data.data);
+      setCurrentStep(1);
     } catch (err) {
-      setError('Failed to fetch preview data: ' + err.message);
-      console.error('Failed to fetch preview data:', err);
+      if (err instanceof ApiError) {
+        setError(err.message);
+      } else {
+        setError('Failed to fetch preview data: ' + err.message);
+        console.error('Failed to fetch preview data:', err);
+      }
     } finally {
       setLoading(false);
     }
@@ -82,20 +73,16 @@ export default function TestDataDeletion() {
     setError(null);
     
     try {
-      const response = await fetch(API_CONFIG.getApiUrl(`api/test-data?mode=confirmation&days_old=${daysOld}`), {
-        method: 'DELETE'
-      });
-      const data = await response.json();
-      
-      if (data.success) {
-        setConfirmationData(data.data);
-        setCurrentStep(2);
-      } else {
-        setError(data.error || 'Failed to get confirmation data');
-      }
+      const data = await remove('api/test-data', { mode: 'confirmation', days_old: daysOld });
+      setConfirmationData(data.data);
+      setCurrentStep(2);
     } catch (err) {
-      setError('Failed to get confirmation data: ' + err.message);
-      console.error('Failed to get confirmation data:', err);
+      if (err instanceof ApiError) {
+        setError(err.message);
+      } else {
+        setError('Failed to get confirmation data: ' + err.message);
+        console.error('Failed to get confirmation data:', err);
+      }
     } finally {
       setLoading(false);
     }
@@ -106,31 +93,27 @@ export default function TestDataDeletion() {
     setError(null);
     
     try {
-      const response = await fetch(API_CONFIG.getApiUrl(`api/test-data?mode=execution&days_old=${daysOld}&force=true`), {
-        method: 'DELETE'
-      }  );
-      const data = await response.json();
-      
-      if (data.success) {
+      const data = await remove('api/test-data', { mode: 'execution', days_old: daysOld, force: true });
+      setExecutionResult({
+        success: true,
+        message: data.message
+      });
+      setCurrentStep(3);
+    } catch (err) {
+      if (err instanceof ApiError) {
         setExecutionResult({
-          success: true,
-          message: data.message
+          success: false,
+          error: err.message
         });
-        setCurrentStep(3);
+        setError(err.message);
       } else {
         setExecutionResult({
           success: false,
-          error: data.error || 'Deletion failed'
+          error: 'Deletion failed: ' + err.message
         });
-        setError(data.error || 'Deletion failed');
+        setError('Deletion failed: ' + err.message);
+        console.error('Deletion failed:', err);
       }
-    } catch (err) {
-      setExecutionResult({
-        success: false,
-        error: 'Deletion failed: ' + err.message
-      });
-      setError('Deletion failed: ' + err.message);
-      console.error('Deletion failed:', err);
     } finally {
       setIsExecuting(false);
     }

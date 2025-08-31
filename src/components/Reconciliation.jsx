@@ -4,26 +4,27 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Alert, AlertDescription } from '@/components/ui/alert.jsx'
 import { Progress } from '@/components/ui/progress.jsx'
 import { Badge } from '@/components/ui/badge.jsx'
-import { 
-  CheckCircle, 
-  XCircle, 
-  Clock, 
-  RefreshCw, 
+import {
+  CheckCircle,
+  XCircle,
+  Clock,
+  RefreshCw,
   BarChart3,
   Calendar,
   AlertTriangle
 } from 'lucide-react'
-import { 
-  LineChart, 
-  Line, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
   ResponsiveContainer,
   BarChart,
   Bar
 } from 'recharts'
+import { get, post, ApiError } from '@/services/apiService';
 
 const Reconciliation = () => {
   const [pendingRecords, setPendingRecords] = useState([])
@@ -39,27 +40,33 @@ const Reconciliation = () => {
 
   const fetchPendingReconciliations = async () => {
     try {
-      const response = await fetch('/api/reconciliation/pending')
-      const data = await response.json()
+      const data = await get('/reconciliation/pending')
       
       if (data.success) {
         setPendingRecords(data.data.records)
       }
     } catch (err) {
-      setError('Erro ao carregar reconciliações pendentes')
+      if (err instanceof ApiError) {
+        setError(err.message)
+      } else {
+        setError('Erro ao carregar reconciliações pendentes: ' + err.message)
+      }
     }
   }
 
   const fetchReconciliationReport = async () => {
     try {
-      const response = await fetch('/api/reconciliation/report')
-      const data = await response.json()
+      const data = await get('/reconciliation/report')
       
       if (data.success) {
         setReport(data.data)
       }
     } catch (err) {
-      setError('Erro ao carregar relatório de reconciliação')
+      if (err instanceof ApiError) {
+        setError(err.message)
+      } else {
+        setError('Erro ao carregar relatório de reconciliação: ' + err.message)
+      }
     } finally {
       setLoading(false)
     }
@@ -70,11 +77,7 @@ const Reconciliation = () => {
     setError(null)
     
     try {
-      const response = await fetch('/api/reconciliation', {
-        method: 'POST'
-      })
-      
-      const data = await response.json()
+      const data = await post('/reconciliation')
       
       if (data.success) {
         // Atualiza os dados após a reconciliação
@@ -84,7 +87,11 @@ const Reconciliation = () => {
         setError(data.error || 'Erro ao iniciar reconciliação')
       }
     } catch (err) {
-      setError('Erro de conexão. Verifique se o servidor está rodando.')
+      if (err instanceof ApiError) {
+        setError(err.message)
+      } else {
+        setError('Erro ao iniciar reconciliação: ' + err.message)
+      }
     } finally {
       setReconciling(false)
     }
@@ -92,11 +99,7 @@ const Reconciliation = () => {
 
   const confirmReconciliation = async (reconciliationId) => {
     try {
-      const response = await fetch(`/api/reconciliation/${reconciliationId}/confirm`, {
-        method: 'POST'
-      })
-      
-      const data = await response.json()
+      const data = await post(`/reconciliation/${reconciliationId}/confirm`)
       
       if (data.success) {
         // Atualiza os dados após a confirmação
@@ -106,17 +109,17 @@ const Reconciliation = () => {
         setError(data.error || 'Erro ao confirmar reconciliação')
       }
     } catch (err) {
-      setError('Erro de conexão. Verifique se o servidor está rodando.')
+      if (err instanceof ApiError) {
+        setError(err.message)
+      } else {
+        setError('Erro ao confirmar reconciliação: ' + err.message)
+      }
     }
   }
 
   const rejectReconciliation = async (reconciliationId) => {
     try {
-      const response = await fetch(`/api/reconciliation/${reconciliationId}/reject`, {
-        method: 'POST'
-      })
-      
-      const data = await response.json()
+      const data = await post(`/reconciliation/${reconciliationId}/reject`)
       
       if (data.success) {
         // Atualiza os dados após a rejeição
@@ -126,7 +129,11 @@ const Reconciliation = () => {
         setError(data.error || 'Erro ao rejeitar reconciliação')
       }
     } catch (err) {
-      setError('Erro de conexão. Verifique se o servidor está rodando.')
+      if (err instanceof ApiError) {
+        setError(err.message)
+      } else {
+        setError('Erro ao rejeitar reconciliação: ' + err.message)
+      }
     }
   }
 

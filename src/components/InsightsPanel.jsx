@@ -19,6 +19,7 @@ import {
   MessageSquare
 } from 'lucide-react'
 import API_CONFIG from '@/config/api.js'
+import { get, ApiError } from '@/services/apiService.js';
 import { 
   LineChart, 
   Line, 
@@ -36,6 +37,7 @@ const InsightsPanel = ({ insights: initialInsights }) => {
   const [aiInsights, setAiInsights] = useState('')
   const [loading, setLoading] = useState(false)
   const [aiLoading, setAiLoading] = useState(false)
+  const [error, setError] = useState(null)
 
   useEffect(() => {
     if (initialInsights) {
@@ -48,14 +50,22 @@ const InsightsPanel = ({ insights: initialInsights }) => {
   const fetchInsights = async () => {
     setLoading(true)
     try {
-      const response = await fetch(API_CONFIG.getApiUrl('api/insights'))
-      const data = await response.json()
+      const data = await get('api/insights/general')
       
       if (data.success) {
         setInsights(data.data)
+      } else {
+        // Handle cases where API returns success: false but no ApiError is thrown
+        setError(data.message || 'Erro desconhecido ao buscar insights.')
       }
     } catch (error) {
-      console.error('Erro ao buscar insights:', error)
+      if (error instanceof ApiError) {
+        console.error('Erro ao buscar insights:', error.message)
+        setError(error.message)
+      } else {
+        console.error('Erro inesperado ao buscar insights:', error)
+        setError('Erro inesperado ao buscar insights.')
+      }
     } finally {
       setLoading(false)
     }
@@ -64,15 +74,24 @@ const InsightsPanel = ({ insights: initialInsights }) => {
   const fetchAiInsights = async () => {
     setAiLoading(true)
     try {
-      const response = await fetch(API_CONFIG.getApiUrl('api/ai-insights'))
-      const data = await response.json()
+      const data = await get('api/insights/ai')
       
       if (data.success) {
         setAiInsights(data.data.ai_insights)
+      } else {
+        setError(data.message || 'Erro desconhecido ao buscar insights de IA.')
+        setAiInsights('Erro ao gerar insights com IA. Verifique se as chaves de API estão configuradas.')
       }
     } catch (error) {
-      console.error('Erro ao buscar insights de IA:', error)
-      setAiInsights('Erro ao gerar insights com IA. Verifique se as chaves de API estão configuradas.')
+      if (error instanceof ApiError) {
+        console.error('Erro ao buscar insights de IA:', error.message)
+        setError(error.message)
+        setAiInsights(`Erro ao gerar insights com IA: ${error.message}`)
+      } else {
+        console.error('Erro inesperado ao buscar insights de IA:', error)
+        setError('Erro inesperado ao buscar insights de IA.')
+        setAiInsights('Erro inesperado ao gerar insights com IA.')
+      }
     } finally {
       setAiLoading(false)
     }
