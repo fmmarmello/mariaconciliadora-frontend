@@ -46,6 +46,25 @@ import Reconciliation from './components/Reconciliation'
 import TestDataDeletion from './components/TestDataDeletion'
 import XLSXAnalysisTest from './components/XLSXAnalysisTest'
 
+// New ML Components
+import ModelPerformanceVisualization from './components/ModelPerformanceVisualization'
+import ModelComparisonDashboard from './components/ModelComparisonDashboard'
+import HyperparameterOptimization from './components/HyperparameterOptimization'
+import FeatureImportanceVisualization from './components/FeatureImportanceVisualization'
+import ModelSelectionRecommendations from './components/ModelSelectionRecommendations'
+import TrainingProgress from './components/TrainingProgress'
+import ErrorHandling from './components/ErrorHandling'
+
+// Data Quality Components
+import DataQualityDashboard from './components/DataQualityDashboard'
+import ValidationResultsViewer from './components/ValidationResultsViewer'
+import OutlierDetectionVisualization from './components/OutlierDetectionVisualization'
+import DataCompletenessAnalyzer from './components/DataCompletenessAnalyzer'
+import TextPreprocessingMonitor from './components/TextPreprocessingMonitor'
+import DataAugmentationViewer from './components/DataAugmentationViewer'
+import CrossFieldValidationDashboard from './components/CrossFieldValidationDashboard'
+import FeatureEngineeringMetrics from './components/FeatureEngineeringMetrics'
+
 function App() {
   const [summary, setSummary] = useState(null)
   const [insights, setInsights] = useState(null)
@@ -145,16 +164,13 @@ function App() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-9 lg:w-[900px]">
+          <TabsList className="grid w-full grid-cols-6 lg:w-[720px]">
             <TabsTrigger value="overview">Visão Geral</TabsTrigger>
-            <TabsTrigger value="upload">Upload OFX</TabsTrigger>
-            <TabsTrigger value="xlsx-analysis">Análise XLSX</TabsTrigger>
+            <TabsTrigger value="upload">Upload</TabsTrigger>
             <TabsTrigger value="transactions">Transações</TabsTrigger>
-            <TabsTrigger value="financial">Financeiro</TabsTrigger>
-            <TabsTrigger value="ai-training">IA Treinamento</TabsTrigger>
-            <TabsTrigger value="predictions">Previsões</TabsTrigger>
-            <TabsTrigger value="reconciliation">Reconciliação</TabsTrigger>
-            <TabsTrigger value="test-data">Dados de Teste</TabsTrigger>
+            <TabsTrigger value="data-quality">Qualidade</TabsTrigger>
+            <TabsTrigger value="ai-ml">IA & ML</TabsTrigger>
+            <TabsTrigger value="tools">Ferramentas</TabsTrigger>
           </TabsList>
 
           {/* Overview Tab */}
@@ -323,48 +339,139 @@ function App() {
           </TabsContent>
 
           {/* Upload Tab */}
-          <TabsContent value="upload">
+          <TabsContent value="upload" className="space-y-6">
             <FileUpload onUploadSuccess={onUploadSuccess} />
-          </TabsContent>
-
-          {/* XLSX Analysis Test Tab */}
-          <TabsContent value="xlsx-analysis">
             <XLSXAnalysisTest />
           </TabsContent>
 
           {/* Transactions Tab */}
-          <TabsContent value="transactions">
+          <TabsContent value="transactions" className="space-y-6">
             <TransactionsList transactions={transactions} />
-          </TabsContent>
-
-          {/* Insights Tab */}
-          <TabsContent value="insights">
             <InsightsPanel insights={insights} />
           </TabsContent>
-          
-          {/* Financial Tracking Tab */}
-          <TabsContent value="financial">
-            <FinancialTracker />
+
+          {/* Data Quality Tab */}
+          <TabsContent value="data-quality" className="space-y-6">
+            <Tabs defaultValue="dashboard" className="w-full">
+              <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8">
+                <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+                <TabsTrigger value="validation">Validação</TabsTrigger>
+                <TabsTrigger value="outliers">Outliers</TabsTrigger>
+                <TabsTrigger value="completeness">Completude</TabsTrigger>
+                <TabsTrigger value="text">Texto</TabsTrigger>
+                <TabsTrigger value="augmentation">Augmentação</TabsTrigger>
+                <TabsTrigger value="cross-field">Cross-Field</TabsTrigger>
+                <TabsTrigger value="features">Features</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="dashboard">
+                <DataQualityDashboard />
+              </TabsContent>
+
+              <TabsContent value="validation">
+                <ValidationResultsViewer />
+              </TabsContent>
+
+              <TabsContent value="outliers">
+                <OutlierDetectionVisualization />
+              </TabsContent>
+
+              <TabsContent value="completeness">
+                <DataCompletenessAnalyzer />
+              </TabsContent>
+
+              <TabsContent value="text">
+                <TextPreprocessingMonitor />
+              </TabsContent>
+
+              <TabsContent value="augmentation">
+                <DataAugmentationViewer />
+              </TabsContent>
+
+              <TabsContent value="cross-field">
+                <CrossFieldValidationDashboard />
+              </TabsContent>
+
+              <TabsContent value="features">
+                <FeatureEngineeringMetrics />
+              </TabsContent>
+            </Tabs>
           </TabsContent>
-          
-          {/* AI Training Tab */}
-          <TabsContent value="ai-training">
-            <AITraining />
+
+          {/* AI & ML Tab - Main ML Dashboard */}
+          <TabsContent value="ai-ml" className="space-y-6">
+            <Tabs defaultValue="training" className="w-full">
+              <TabsList className="grid w-full grid-cols-7">
+                <TabsTrigger value="training">Treinamento</TabsTrigger>
+                <TabsTrigger value="performance">Performance</TabsTrigger>
+                <TabsTrigger value="comparison">Comparação</TabsTrigger>
+                <TabsTrigger value="optimization">Otimização</TabsTrigger>
+                <TabsTrigger value="features">Features</TabsTrigger>
+                <TabsTrigger value="recommendations">Recomendações</TabsTrigger>
+                <TabsTrigger value="progress">Progresso</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="training">
+                <AITraining />
+              </TabsContent>
+
+              <TabsContent value="performance">
+                <ModelPerformanceVisualization />
+              </TabsContent>
+
+              <TabsContent value="comparison">
+                <ModelComparisonDashboard />
+              </TabsContent>
+
+              <TabsContent value="optimization">
+                <HyperparameterOptimization />
+              </TabsContent>
+
+              <TabsContent value="features">
+                <FeatureImportanceVisualization />
+              </TabsContent>
+
+              <TabsContent value="recommendations">
+                <ModelSelectionRecommendations />
+              </TabsContent>
+
+              <TabsContent value="progress">
+                <TrainingProgress />
+              </TabsContent>
+            </Tabs>
           </TabsContent>
-          
-          {/* Predictions Tab */}
-          <TabsContent value="predictions">
-            <FinancialPredictions />
-          </TabsContent>
-          
-          {/* Reconciliation Tab */}
-          <TabsContent value="reconciliation">
-            <Reconciliation />
-          </TabsContent>
-          
-          {/* Test Data Deletion Tab */}
-          <TabsContent value="test-data">
-            <TestDataDeletion />
+
+          {/* Tools Tab */}
+          <TabsContent value="tools" className="space-y-6">
+            <Tabs defaultValue="financial" className="w-full">
+              <TabsList className="grid w-full grid-cols-5">
+                <TabsTrigger value="financial">Financeiro</TabsTrigger>
+                <TabsTrigger value="predictions">Previsões</TabsTrigger>
+                <TabsTrigger value="reconciliation">Reconciliação</TabsTrigger>
+                <TabsTrigger value="test-data">Dados de Teste</TabsTrigger>
+                <TabsTrigger value="errors">Tratamento de Erros</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="financial">
+                <FinancialTracker />
+              </TabsContent>
+
+              <TabsContent value="predictions">
+                <FinancialPredictions />
+              </TabsContent>
+
+              <TabsContent value="reconciliation">
+                <Reconciliation />
+              </TabsContent>
+
+              <TabsContent value="test-data">
+                <TestDataDeletion />
+              </TabsContent>
+
+              <TabsContent value="errors">
+                <ErrorHandling />
+              </TabsContent>
+            </Tabs>
           </TabsContent>
         </Tabs>
       </main>
