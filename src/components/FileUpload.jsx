@@ -80,8 +80,8 @@ const FileUpload = ({ onUploadSuccess }) => {
 
       // Determine the endpoint based on file extension
       const endpoint = fileExtension === 'xlsx' ? 'api/upload-xlsx' : 'api/upload-ofx';
-      
-      const data = await post(endpoint, formData, {'Content-Type': undefined});
+
+      const data = await post(endpoint, formData);
 
       setUploadResult(data)
       if (onUploadSuccess) {

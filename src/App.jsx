@@ -44,6 +44,7 @@ import AITraining from './components/AITraining'
 import FinancialPredictions from './components/FinancialPredictions'
 import Reconciliation from './components/Reconciliation'
 import TestDataDeletion from './components/TestDataDeletion'
+import XLSXAnalysisTest from './components/XLSXAnalysisTest'
 
 function App() {
   const [summary, setSummary] = useState(null)
@@ -144,9 +145,10 @@ function App() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-8 lg:w-[800px]">
+          <TabsList className="grid w-full grid-cols-9 lg:w-[900px]">
             <TabsTrigger value="overview">Visão Geral</TabsTrigger>
             <TabsTrigger value="upload">Upload OFX</TabsTrigger>
+            <TabsTrigger value="xlsx-analysis">Análise XLSX</TabsTrigger>
             <TabsTrigger value="transactions">Transações</TabsTrigger>
             <TabsTrigger value="financial">Financeiro</TabsTrigger>
             <TabsTrigger value="ai-training">IA Treinamento</TabsTrigger>
@@ -323,6 +325,11 @@ function App() {
           {/* Upload Tab */}
           <TabsContent value="upload">
             <FileUpload onUploadSuccess={onUploadSuccess} />
+          </TabsContent>
+
+          {/* XLSX Analysis Test Tab */}
+          <TabsContent value="xlsx-analysis">
+            <XLSXAnalysisTest />
           </TabsContent>
 
           {/* Transactions Tab */}

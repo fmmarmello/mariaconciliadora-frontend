@@ -61,7 +61,18 @@ async function request(endpoint, options) {
  * @returns {Promise<object>} - The parsed JSON response data.
  */
 export async function get(endpoint, params) {
-    const url = new URL(API_CONFIG.getApiUrl(endpoint));
+    const baseUrl = API_CONFIG.getApiUrl(endpoint);
+
+    // Handle case where baseUrl is empty (same-origin requests)
+    if (!baseUrl) {
+        const url = new URL(endpoint, window.location.origin);
+        if (params) {
+            Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
+        }
+        return request(url.pathname + url.search, { method: 'GET' });
+    }
+
+    const url = new URL(baseUrl);
     if (params) {
         Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
     }
@@ -76,13 +87,17 @@ export async function get(endpoint, params) {
  * @returns {Promise<object>} - The parsed JSON response data.
  */
 export async function post(endpoint, data, headers = {}) {
+    // Handle FormData differently - don't set Content-Type, let browser set it with boundary
+    const isFormData = data instanceof FormData;
+    const requestHeaders = isFormData ? headers : {
+        'Content-Type': 'application/json',
+        ...headers,
+    };
+
     return request(endpoint, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            ...headers,
-        },
-        body: JSON.stringify(data),
+        headers: requestHeaders,
+        body: isFormData ? data : JSON.stringify(data),
     });
 }
 

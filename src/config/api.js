@@ -9,7 +9,7 @@ const API_CONFIG = {
   
   // Production API URL - used when running 'npm run build' and deploying
   // Replace this with your actual production API URL
-  PROD_API_URL: 'https://your-production-api-domain.com',
+  PROD_API_URL: 'http://localhost:5000',
   
   // Get the appropriate API base URL based on the current environment
   getApiBaseUrl: () => {
@@ -17,12 +17,17 @@ const API_CONFIG = {
     if (import.meta.env.DEV) {
       return API_CONFIG.DEV_API_URL;
     }
-    
+
     // Check if we're in production mode
     if (import.meta.env.PROD) {
+      // If we're being served by the backend (same origin), use relative URLs
+      // This handles the case where the frontend is served by Flask
+      if (window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1')) {
+        return ''; // Use relative URLs for same-origin requests
+      }
       return API_CONFIG.PROD_API_URL;
     }
-    
+
     // Default fallback to development URL
     return API_CONFIG.DEV_API_URL;
   },
