@@ -27,7 +27,7 @@ import {
   PieChart,
   Pie,
   Cell,
-  TreeMap,
+  Treemap,
   RadarChart,
   PolarGrid,
   PolarAngleAxis,
