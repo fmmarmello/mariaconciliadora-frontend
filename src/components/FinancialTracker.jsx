@@ -63,11 +63,17 @@ const FinancialTracker = () => {
       }
     } catch (error) {
       if (error instanceof ApiError) {
-        setError(`Erro ao buscar dados financeiros: ${error.message}`)
+        let detailedError = error.message; // Fallback to the original message
+        if (error.data && error.data.details && Array.isArray(error.data.details)) {
+          detailedError = error.data.details.join(', ');
+        } else if (error.data && error.data.error) {
+          detailedError = error.data.error;
+        }
+        setError(`Erro ao buscar dados financeiros: ${detailedError}`);
       } else {
-        setError('Erro de conexão ao buscar dados financeiros.')
+        setError('Erro de conexão ao buscar dados financeiros.');
       }
-      console.error('Erro ao buscar dados financeiros:', error)
+      console.error('Erro ao buscar dados financeiros:', error);
     }
   }
 
@@ -79,11 +85,17 @@ const FinancialTracker = () => {
       }
     } catch (error) {
       if (error instanceof ApiError) {
-        setError(`Erro ao buscar resumo financeiro: ${error.message}`)
+        let detailedError = error.message;
+        if (error.data && error.data.details && Array.isArray(error.data.details)) {
+          detailedError = error.data.details.join(', ');
+        } else if (error.data && error.data.error) {
+          detailedError = error.data.error;
+        }
+        setError(`Erro ao buscar resumo financeiro: ${detailedError}`);
       } else {
-        setError('Erro de conexão ao buscar resumo financeiro.')
+        setError('Erro de conexão ao buscar resumo financeiro.');
       }
-      console.error('Erro ao buscar resumo financeiro:', error)
+      console.error('Erro ao buscar resumo financeiro:', error);
     } finally {
       setLoading(false)
     }
@@ -154,9 +166,15 @@ const FinancialTracker = () => {
       }
     } catch (error) {
       if (error instanceof ApiError) {
-        setError(error.message)
+        let detailedError = error.message;
+        if (error.data && error.data.details && Array.isArray(error.data.details)) {
+          detailedError = error.data.details.join(', ');
+        } else if (error.data && error.data.error) {
+          detailedError = error.data.error;
+        }
+        setError(detailedError);
       } else {
-        setError('Erro de conexão. Verifique se o servidor está rodando.')
+        setError('Erro de conexão. Verifique se o servidor está rodando.');
       }
     } finally {
       setUploading(false)

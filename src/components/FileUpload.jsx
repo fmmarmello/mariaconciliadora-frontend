@@ -21,6 +21,7 @@ const FileUpload = ({ onUploadSuccess }) => {
   const [uploading, setUploading] = useState(false)
   const [uploadResult, setUploadResult] = useState(null)
   const [error, setError] = useState(null)
+  const [duplicateFileError, setDuplicateFileError] = useState(null)
   const fileInputRef = useRef(null)
 
   const supportedBanks = [
@@ -59,6 +60,7 @@ const FileUpload = ({ onUploadSuccess }) => {
   const handleFile = async (file) => {
     setError(null)
     setUploadResult(null)
+    setDuplicateFileError(null)
 
     // Validações
     const fileExtension = file.name.toLowerCase().split('.').pop();
@@ -88,15 +90,20 @@ const FileUpload = ({ onUploadSuccess }) => {
         onUploadSuccess()
       }
     } catch (err) {
-      if (err instanceof ApiError) {
-        // Handle file duplicate case
-        if (err.data && err.data.file_duplicate) {
-          setError(`Arquivo já foi processado anteriormente. Data original: ${err.data.original_upload_date || 'desconhecida'}`)
+      if (err instanceof ApiError && err.data) {
+        if (err.data.error_code === 'FILE_PROCESSING_DUPLICATEFILEERROR') {
+          const originalDate = err.data.details?.original_upload_date
+            ? new Date(err.data.details.original_upload_date).toLocaleDateString('pt-BR')
+            : 'desconhecida';
+          setDuplicateFileError({
+            message: `Este arquivo já foi enviado em ${originalDate}.`,
+            filename: err.data.details?.filename
+          });
         } else {
-          setError(err.message || 'Erro ao processar arquivo')
+          setError(err.data.message || err.message || 'Erro ao processar arquivo');
         }
       } else {
-        setError(err.message || 'Erro ao enviar arquivo')
+        setError(err.message || 'Erro ao enviar arquivo');
       }
     } finally {
       setUploading(false)
@@ -244,6 +251,18 @@ const FileUpload = ({ onUploadSuccess }) => {
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      {/* Erro de arquivo duplicado */}
+      {duplicateFileError && (
+        <Alert variant="destructive" className="border-yellow-200 bg-yellow-50 text-yellow-800">
+          <AlertCircle className="h-4 w-4 text-yellow-600" />
+          <AlertDescription>
+            <p className="font-medium">Arquivo Duplicado</p>
+            <p>{duplicateFileError.message}</p>
+            <p className="text-xs text-gray-600 mt-1">Arquivo: {duplicateFileError.filename}</p>
+          </AlertDescription>
         </Alert>
       )}
 

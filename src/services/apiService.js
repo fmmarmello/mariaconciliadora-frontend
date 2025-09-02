@@ -36,7 +36,15 @@ async function request(endpoint, options) {
         }
 
         if (!response.ok) {
-            const errorMessage = data && (data.error || data.message) ? (data.error || data.message) : `API request failed with status ${response.status}`;
+            let errorMessage = `API request failed with status ${response.status}`;
+            if (data) {
+                const errorValue = data.error || data.message;
+                if (typeof errorValue === 'string') {
+                    errorMessage = errorValue;
+                } else if (errorValue) {
+                    errorMessage = JSON.stringify(errorValue);
+                }
+            }
             throw new ApiError(errorMessage, response.status, data);
         }
 

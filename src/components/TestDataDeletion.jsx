@@ -192,8 +192,11 @@ export default function TestDataDeletion() {
                   id="days-old"
                   type="number"
                   value={daysOld}
-                  onChange={(e) => setDaysOld(parseInt(e.target.value) || 30)}
-                  min="1"
+                  onChange={(e) => {
+                    const value = parseInt(e.target.value);
+                    setDaysOld(isNaN(value) ? 30 : value);
+                  }}
+                  min="0"
                   max="365"
                   className="w-32 mt-1"
                 />
