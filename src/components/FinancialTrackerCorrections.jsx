@@ -195,7 +195,7 @@ const FinancialTrackerCorrections = ({ incompleteEntries, onCorrectionsSaved }) 
                       />
                     </div>
                     
-                    <div className="space-y-2">
+                  <div className="space-y-2">
                       <Label htmlFor={`transaction-type-${index}`}>Tipo</Label>
                       <Select
                         value={entry.transaction_type || "expense"}
@@ -209,6 +209,16 @@ const FinancialTrackerCorrections = ({ incompleteEntries, onCorrectionsSaved }) 
                           <SelectItem value="income">Receita</SelectItem>
                         </SelectContent>
                       </Select>
+                    </div>
+                    
+                    <div className="space-y-2 md:col-span-2">
+                      <Label htmlFor={`justificativa-${index}`}>Justificativa (opcional)</Label>
+                      <Textarea
+                        id={`justificativa-${index}`}
+                        value={entry.justificativa || ""}
+                        onChange={(e) => handleFieldChange(index, 'justificativa', e.target.value)}
+                        placeholder="Explique o ajuste realizado, se necessário"
+                      />
                     </div>
                   </div>
                   

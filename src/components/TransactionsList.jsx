@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input.jsx'
 import { Badge } from '@/components/ui/badge.jsx'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select.jsx'
 import API_CONFIG from '@/config/api.js'
-import { get, ApiError } from '@/services/apiService.js'
+import { get, put, ApiError } from '@/services/apiService.js'
 import { 
   Search, 
   Filter, 
@@ -23,6 +23,9 @@ const TransactionsList = ({ transactions: initialTransactions }) => {
   const [transactions, setTransactions] = useState(initialTransactions || [])
   const [filteredTransactions, setFilteredTransactions] = useState([])
   const [loading, setLoading] = useState(false)
+  const [editingId, setEditingId] = useState(null)
+  const [editValues, setEditValues] = useState({})
+  const [saving, setSaving] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [filters, setFilters] = useState({
     search: '',
@@ -122,6 +125,46 @@ const TransactionsList = ({ transactions: initialTransactions }) => {
       startDate: '',
       endDate: ''
     })
+  }
+
+  const startEdit = (tx) => {
+    setEditingId(tx.id)
+    setEditValues({
+      date: tx.date ? new Date(tx.date).toISOString().split('T')[0] : '',
+      amount: tx.amount,
+      description: tx.description || '',
+      category: tx.category || '',
+      transaction_type: tx.transaction_type || 'debit',
+      is_anomaly: false,
+      justificativa: tx.justificativa || ''
+    })
+  }
+
+  const cancelEdit = () => {
+    setEditingId(null)
+    setEditValues({})
+  }
+
+  const handleEditChange = (field, value) => {
+    setEditValues(prev => ({ ...prev, [field]: value }))
+  }
+
+  const saveEdit = async () => {
+    if (!editingId) return
+    setSaving(true)
+    try {
+      const payload = { ...editValues }
+      const res = await put(`api/transactions/${editingId}`, payload)
+      if (res && res.success && res.data) {
+        // Update local state
+        setTransactions(prev => prev.map(t => t.id === editingId ? res.data : t))
+        cancelEdit()
+      }
+    } catch (err) {
+      console.error('Erro ao salvar ajuste:', err instanceof ApiError ? err.message : err)
+    } finally {
+      setSaving(false)
+    }
   }
 
   // Paginação
@@ -309,6 +352,49 @@ const TransactionsList = ({ transactions: initialTransactions }) => {
                         </Badge>
                       )}
                     </div>
+
+                    {editingId === transaction.id && (
+                      <div className="mt-3 p-3 bg-white rounded border">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <div>
+                            <label className="text-xs font-medium">Data</label>
+                            <Input type="date" value={editValues.date || ''} onChange={(e) => handleEditChange('date', e.target.value)} />
+                          </div>
+                          <div>
+                            <label className="text-xs font-medium">Valor</label>
+                            <Input type="number" step="0.01" value={editValues.amount ?? ''} onChange={(e) => handleEditChange('amount', parseFloat(e.target.value) || 0)} />
+                          </div>
+                          <div className="md:col-span-2">
+                            <label className="text-xs font-medium">Descrição</label>
+                            <Input value={editValues.description || ''} onChange={(e) => handleEditChange('description', e.target.value)} />
+                          </div>
+                          <div>
+                            <label className="text-xs font-medium">Categoria</label>
+                            <Input value={editValues.category || ''} onChange={(e) => handleEditChange('category', e.target.value)} />
+                          </div>
+                          <div>
+                            <label className="text-xs font-medium">Tipo</label>
+                            <Select value={editValues.transaction_type} onValueChange={(v) => handleEditChange('transaction_type', v)}>
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="debit">Gasto</SelectItem>
+                                <SelectItem value="credit">Receita</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="md:col-span-2">
+                            <label className="text-xs font-medium">Justificativa</label>
+                            <Input value={editValues.justificativa || ''} onChange={(e) => handleEditChange('justificativa', e.target.value)} placeholder="Explique o ajuste realizado" />
+                          </div>
+                        </div>
+                        <div className="flex gap-2 justify-end mt-3">
+                          <Button variant="outline" onClick={cancelEdit}>Cancelar</Button>
+                          <Button onClick={saveEdit} disabled={saving}>{saving ? 'Salvando...' : 'Salvar'}</Button>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex items-center space-x-3">
@@ -322,6 +408,9 @@ const TransactionsList = ({ transactions: initialTransactions }) => {
                       )}
                       {transaction.amount > 0 ? '+' : ''}R$ {Math.abs(transaction.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </div>
+                    {transaction.is_anomaly && editingId !== transaction.id && (
+                      <Button size="sm" variant="outline" onClick={() => startEdit(transaction)}>Ajustar</Button>
+                    )}
                   </div>
                 </div>
               ))}

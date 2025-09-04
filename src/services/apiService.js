@@ -24,7 +24,26 @@ async function request(endpoint, options) {
     const url = API_CONFIG.getApiUrl(endpoint);
 
     try {
+        // Debug init
+        try {
+            console.debug('[apiService.request] init', {
+                url,
+                method: options && options.method,
+                headers: options && options.headers
+            });
+        } catch (_) {}
+
         const response = await fetch(url, options);
+
+        // Debug response meta
+        try {
+            console.debug('[apiService.request] resp', {
+                status: response.status,
+                ok: response.ok,
+                contentType: response.headers.get('content-type')
+            });
+        } catch (_) {}
+
         let data = null;
 
         try {
@@ -41,7 +60,7 @@ async function request(endpoint, options) {
                 const errorValue = data.error || data.message;
                 if (typeof errorValue === 'string') {
                     errorMessage = errorValue;
-                } else if (errorValue) {
+                } else if (errorValue != null) {
                     errorMessage = JSON.stringify(errorValue);
                 }
             }
@@ -97,10 +116,31 @@ export async function get(endpoint, params) {
 export async function post(endpoint, data, headers = {}) {
     // Handle FormData differently - don't set Content-Type, let browser set it with boundary
     const isFormData = data instanceof FormData;
-    const requestHeaders = isFormData ? headers : {
+
+    // Start with a copy of headers and remove any Content-Type if using FormData
+    const sanitizedHeaders = { ...headers };
+    if (isFormData) {
+        Object.keys(sanitizedHeaders).forEach((k) => {
+            if (k.toLowerCase() === 'content-type') {
+                delete sanitizedHeaders[k];
+            }
+        });
+    }
+
+    const requestHeaders = isFormData ? sanitizedHeaders : {
         'Content-Type': 'application/json',
-        ...headers,
+        ...sanitizedHeaders,
     };
+
+    // Minimal diagnostics for uploads
+    if (isFormData) {
+        try {
+            console.debug('[apiService.post] FormData upload', {
+                endpoint,
+                hasFile: typeof data.has === 'function' ? data.has('file') : false
+            });
+        } catch (_) {}
+    }
 
     return request(endpoint, {
         method: 'POST',

@@ -21,12 +21,18 @@ import {
 import API_CONFIG from '@/config/api.js'
 import { get, ApiError } from '@/services/apiService.js';
 import { 
+  Tooltip, 
+  TooltipContent, 
+  TooltipProvider, 
+  TooltipTrigger 
+} from '@/components/ui/tooltip.jsx'
+import { 
   LineChart, 
   Line, 
   XAxis, 
   YAxis, 
   CartesianGrid, 
-  Tooltip, 
+  Tooltip as RechartsTooltip, 
   ResponsiveContainer,
   BarChart,
   Bar
@@ -208,15 +214,41 @@ const InsightsPanel = ({ insights: initialInsights }) => {
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={categoryData}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis 
-                    dataKey="category" 
+                  <XAxis
+                    dataKey="category"
                     angle={-45}
                     textAnchor="end"
                     height={80}
                     fontSize={12}
+                    interval={0}
+                    tick={({ x, y, payload }) => (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <g transform={`translate(${x},${y})`}>
+                              <text
+                                x={0}
+                                y={0}
+                                dy={16}
+                                textAnchor="end"
+                                fill="#666"
+                                transform="rotate(-45)"
+                              >
+                                {payload.value.length > 10
+                                  ? `${payload.value.substring(0, 10)}...`
+                                  : payload.value}
+                              </text>
+                            </g>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>{payload.value}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
                   />
                   <YAxis />
-                  <Tooltip 
+                  <RechartsTooltip 
                     formatter={(value) => [`R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 'Valor']}
                   />
                   <Bar dataKey="amount" fill="#8884d8" />
