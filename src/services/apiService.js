@@ -114,25 +114,20 @@ export async function get(endpoint, params) {
  * @returns {Promise<object>} - The parsed JSON response data.
  */
 export async function post(endpoint, data, headers = {}) {
-    // Handle FormData differently - don't set Content-Type, let browser set it with boundary
+    const hasBody = data !== undefined && data !== null;
     const isFormData = data instanceof FormData;
 
-    // Start with a copy of headers and remove any Content-Type if using FormData
     const sanitizedHeaders = { ...headers };
     if (isFormData) {
         Object.keys(sanitizedHeaders).forEach((k) => {
-            if (k.toLowerCase() === 'content-type') {
-                delete sanitizedHeaders[k];
-            }
+            if (k.toLowerCase() === 'content-type') delete sanitizedHeaders[k];
         });
     }
 
-    const requestHeaders = isFormData ? sanitizedHeaders : {
-        'Content-Type': 'application/json',
-        ...sanitizedHeaders,
-    };
+    const requestHeaders = !hasBody
+        ? sanitizedHeaders // no body -> don't set Content-Type
+        : (isFormData ? sanitizedHeaders : { 'Content-Type': 'application/json', ...sanitizedHeaders });
 
-    // Minimal diagnostics for uploads
     if (isFormData) {
         try {
             console.debug('[apiService.post] FormData upload', {
@@ -145,7 +140,7 @@ export async function post(endpoint, data, headers = {}) {
     return request(endpoint, {
         method: 'POST',
         headers: requestHeaders,
-        body: isFormData ? data : JSON.stringify(data),
+        body: !hasBody ? undefined : (isFormData ? data : JSON.stringify(data)),
     });
 }
 
@@ -157,13 +152,11 @@ export async function post(endpoint, data, headers = {}) {
  * @returns {Promise<object>} - The parsed JSON response data.
  */
 export async function put(endpoint, data, headers = {}) {
+    const hasBody = data !== undefined && data !== null;
     return request(endpoint, {
         method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json',
-            ...headers,
-        },
-        body: JSON.stringify(data),
+        headers: hasBody ? { 'Content-Type': 'application/json', ...headers } : { ...headers },
+        body: hasBody ? JSON.stringify(data) : undefined,
     });
 }
 
@@ -175,12 +168,10 @@ export async function put(endpoint, data, headers = {}) {
  * @returns {Promise<object>} - The parsed JSON response data.
  */
 export async function remove(endpoint, data, headers = {}) { // Renamed to 'remove' to avoid conflict with 'delete' keyword
+    const hasBody = data !== undefined && data !== null;
     return request(endpoint, {
         method: 'DELETE',
-        headers: {
-            'Content-Type': 'application/json',
-            ...headers,
-        },
-        body: data ? JSON.stringify(data) : undefined,
+        headers: hasBody ? { 'Content-Type': 'application/json', ...headers } : { ...headers },
+        body: hasBody ? JSON.stringify(data) : undefined,
     });
 }

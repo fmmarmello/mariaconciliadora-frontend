@@ -147,13 +147,14 @@ function App() {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-9 lg:w-[900px]">
             <TabsTrigger value="overview">Visão Geral</TabsTrigger>
-            <TabsTrigger value="upload">Upload OFX</TabsTrigger>
-            <TabsTrigger value="xlsx-analysis">Análise XLSX</TabsTrigger>
+            <TabsTrigger value="upload">Upload OFX</TabsTrigger>            
             <TabsTrigger value="transactions">Transações</TabsTrigger>
             <TabsTrigger value="financial">Financeiro</TabsTrigger>
-            <TabsTrigger value="ai-training">IA Treinamento</TabsTrigger>
+            
             <TabsTrigger value="predictions">Previsões</TabsTrigger>
             <TabsTrigger value="reconciliation">Reconciliação</TabsTrigger>
+            <TabsTrigger value="xlsx-analysis">Análise XLSX</TabsTrigger>
+            <TabsTrigger value="ai-training">IA Treinamento</TabsTrigger>
             <TabsTrigger value="test-data">Dados de Teste</TabsTrigger>
           </TabsList>
 

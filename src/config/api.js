@@ -5,7 +5,7 @@
 const API_CONFIG = {
   // Development API URL - used when running 'npm run dev'
   // This is typically where your local backend server is running
-  DEV_API_URL: 'http://localhost:5000', // Changed from 5173 to 5000 as 5173 is the frontend port
+  DEV_API_URL: 'http://localhost:5000', // Backend base origin (path handled below)
   
   // Production API URL - used when running 'npm run build' and deploying
   // Replace this with your actual production API URL
@@ -35,17 +35,30 @@ const API_CONFIG = {
   // Get the full API URL for a given endpoint
   // This function ensures proper URL construction regardless of how the base URL is configured
   getApiUrl: (endpoint) => {
-    // Get the base URL for the current environment
+    // Always hit the Flask blueprint prefix `/api`.
+    // Avoid duplicating if the endpoint already includes it.
     const baseUrl = API_CONFIG.getApiBaseUrl();
-    
-    // Remove leading slash from endpoint if present to avoid double slashes
-    const cleanEndpoint = endpoint.startsWith('/') ? endpoint.substring(1) : endpoint;
-    
-    // Ensure the base URL ends with a slash
-    const formattedBaseUrl = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
-    
-    // Construct and return the full URL
-    return `${formattedBaseUrl}${cleanEndpoint}`;
+
+    // Normalize endpoint
+    const clean = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
+    const withApi = clean.startsWith('api/') ? clean : `api/${clean}`;
+
+    // Build absolute URL to satisfy consumers using `new URL()`
+    if (!baseUrl) {
+      // Same-origin: use window.location.origin
+      const origin = (typeof window !== 'undefined' && window.location && window.location.origin)
+        ? window.location.origin
+        : '';
+      return `${origin}/${withApi}`;
+    }
+
+    // External/base origin provided
+    const formattedBase = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
+
+    // If base already ends with /api or /api/, don't add api twice
+    const baseHasApi = /\/api\/?$/.test(formattedBase);
+    const endpointPath = baseHasApi ? clean : withApi;
+    return `${formattedBase}${endpointPath}`;
   }
 };
 

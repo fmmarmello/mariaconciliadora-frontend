@@ -18,7 +18,8 @@ import {
   Brain,
   Sparkles,
   Calendar,
-  Building2
+  Building2,
+  CheckCircle
 } from 'lucide-react'
 import { 
   LineChart, 
@@ -431,6 +432,12 @@ const FinancialTracker = () => {
                       <span>{entry.department || 'Sem departamento'}</span>
                       <span>•</span>
                       <span>{new Date(entry.date).toLocaleDateString('pt-BR')}</span>
+                      {(entry.is_reconciled === true || (entry.justificativa && String(entry.justificativa).trim() !== '')) && (
+                        <Badge variant="secondary" className="ml-2 bg-emerald-100 text-emerald-800">
+                          <CheckCircle className="h-3 w-3 mr-1" />
+                          Encontrado
+                        </Badge>
+                      )}
                     </div>
                   </div>
                   <div className={`font-bold ${entry.transaction_type === 'income' ? 'text-green-600' : 'text-red-600'}`}>

@@ -15,6 +15,7 @@ import {
   Calendar,
   Building2,
   Tag,
+  CheckCircle,
   ChevronLeft,
   ChevronRight
 } from 'lucide-react'
@@ -332,6 +333,15 @@ const TransactionsList = ({ transactions: initialTransactions }) => {
                         <Badge variant="destructive" className="text-xs">
                           <AlertTriangle className="h-3 w-3 mr-1" />
                           Anomalia
+                        </Badge>
+                      )}
+                      {(
+                        (transaction.is_reconciled === true) ||
+                        (!transaction.is_anomaly && transaction.justificativa && String(transaction.justificativa).trim() !== '')
+                      ) && (
+                        <Badge variant="secondary" className="text-xs bg-emerald-100 text-emerald-800">
+                          <CheckCircle className="h-3 w-3 mr-1" />
+                          Encontrado
                         </Badge>
                       )}
                     </div>
