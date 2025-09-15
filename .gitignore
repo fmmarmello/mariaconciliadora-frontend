@@ -37,6 +37,14 @@ yarn-error.log*
 # Test coverage reports.
 /coverage
 
+# Playwright test results and reports
+/playwright-report/
+/test-results/
+.last-run.json
+
+# Test mocks (may contain sensitive test data)
+/tests/mocks/
+
 # IDE / Editor specific files
 # ----------------------------------------------------------------
 .vscode/
