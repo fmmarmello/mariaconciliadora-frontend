@@ -5,6 +5,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs.j
 import { Badge } from '@/components/ui/badge.jsx'
 import { Progress } from '@/components/ui/progress.jsx'
 import { Alert, AlertDescription } from '@/components/ui/alert.jsx'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip.jsx'
+import { Skeleton } from '@/components/ui/skeleton.jsx'
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet.jsx'
 import { 
   Upload, 
   TrendingUp, 
@@ -18,20 +21,20 @@ import {
   Brain,
   Sparkles
 } from 'lucide-react'
-import { 
-  LineChart, 
-  Line, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer,
-  PieChart as RechartsPieChart,
-  Pie,
-  Cell,
-  BarChart,
-  Bar
-} from 'recharts'
+import {
+   LineChart,
+   Line,
+   XAxis,
+   YAxis,
+   CartesianGrid,
+   Tooltip as RechartsTooltip,
+   ResponsiveContainer,
+   PieChart as RechartsPieChart,
+   Pie,
+   Cell,
+   BarChart,
+   Bar
+ } from 'recharts'
 import API_CONFIG from '@/config/api.js'
 import './App.css'
 
@@ -45,6 +48,7 @@ import FinancialPredictions from './components/FinancialPredictions'
 import Reconciliation from './components/Reconciliation'
 import TestDataDeletion from './components/TestDataDeletion'
 import XLSXAnalysisTest from './components/XLSXAnalysisTest'
+import AnomalyManagement from './components/AnomalyManagement'
 
 function App() {
   const [summary, setSummary] = useState(null)
@@ -108,55 +112,213 @@ function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Carregando Maria Conciliadora...</p>
+      <TooltipProvider>
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+          {/* Header Skeleton */}
+          <header className="bg-white shadow-sm border-b">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="flex justify-between items-center py-6">
+                <div className="flex items-center space-x-3">
+                  <Skeleton className="h-12 w-12 rounded-lg" />
+                  <div>
+                    <Skeleton className="h-8 w-48 mb-2" />
+                    <Skeleton className="h-4 w-32" />
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Skeleton className="h-6 w-20" />
+                  <Skeleton className="h-6 w-24" />
+                </div>
+              </div>
+            </div>
+          </header>
+
+          {/* Main Content Skeleton */}
+          <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="space-y-6">
+              {/* Tabs Skeleton */}
+              <Skeleton className="h-10 w-full max-w-4xl" />
+
+              {/* Cards Skeleton */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {[...Array(4)].map((_, i) => (
+                  <Card key={i}>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <Skeleton className="h-4 w-24" />
+                      <Skeleton className="h-4 w-4" />
+                    </CardHeader>
+                    <CardContent>
+                      <Skeleton className="h-8 w-20 mb-2" />
+                      <Skeleton className="h-3 w-16" />
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+
+              {/* Charts Skeleton */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card>
+                  <CardHeader>
+                    <Skeleton className="h-6 w-32" />
+                  </CardHeader>
+                  <CardContent>
+                    <Skeleton className="h-64 w-full" />
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader>
+                    <Skeleton className="h-6 w-40" />
+                  </CardHeader>
+                  <CardContent>
+                    <Skeleton className="h-64 w-full" />
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          </main>
         </div>
-      </div>
+      </TooltipProvider>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <TooltipProvider>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Header */}
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
             <div className="flex items-center space-x-3">
-              <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-2 rounded-lg">
-                <Brain className="h-8 w-8 text-white" />
-              </div>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-2 rounded-lg cursor-help">
+                    <Brain className="h-8 w-8 text-white" />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>IA Maria Conciliadora - Sistema de Reconciliação Inteligente</p>
+                </TooltipContent>
+              </Tooltip>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">Maria Conciliadora</h1>
                 <p className="text-sm text-gray-500">Dashboard Financeiro Inteligente</p>
               </div>
             </div>
             <div className="flex items-center space-x-2">
-              <Badge variant="secondary" className="bg-green-100 text-green-800">
-                <Sparkles className="h-3 w-3 mr-1" />
-                IA Ativa
-              </Badge>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Badge variant="secondary" className="bg-green-100 text-green-800 cursor-help">
+                    <Sparkles className="h-3 w-3 mr-1" />
+                    IA Ativa
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Sistema de IA está ativo e processando dados em tempo real</p>
+                </TooltipContent>
+              </Tooltip>
+              {summary && summary.overview.anomalies_count > 0 && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Badge variant="destructive" className="bg-red-100 text-red-800 cursor-help">
+                      <AlertTriangle className="h-3 w-3 mr-1" />
+                      {summary.overview.anomalies_count} anomalias
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Clique para ver detalhes das anomalias detectadas</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
             </div>
           </div>
         </div>
       </header>
 
+      {/* Breadcrumb Navigation */}
+      <nav className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center space-x-2 py-3">
+            <span className="text-sm text-gray-500">Dashboard</span>
+            <span className="text-gray-400">/</span>
+            <span className="text-sm font-medium text-gray-900 capitalize">
+              {activeTab === 'overview' ? 'Visão Geral' :
+               activeTab === 'upload' ? 'Upload OFX' :
+               activeTab === 'transactions' ? 'Transações' :
+               activeTab === 'financial' ? 'Financeiro' :
+               activeTab === 'predictions' ? 'Previsões' :
+               activeTab === 'reconciliation' ? 'Reconciliação' :
+               activeTab === 'anomalies' ? 'Anomalias' :
+               activeTab === 'xlsx-analysis' ? 'Análise XLSX' :
+               activeTab === 'ai-training' ? 'IA Treinamento' :
+               activeTab === 'test-data' ? 'Dados de Teste' :
+               activeTab}
+            </span>
+          </div>
+        </div>
+      </nav>
+
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-9 lg:w-[900px]">
-            <TabsTrigger value="overview">Visão Geral</TabsTrigger>
-            <TabsTrigger value="upload">Upload OFX</TabsTrigger>            
-            <TabsTrigger value="transactions">Transações</TabsTrigger>
-            <TabsTrigger value="financial">Financeiro</TabsTrigger>
-            
-            <TabsTrigger value="predictions">Previsões</TabsTrigger>
-            <TabsTrigger value="reconciliation">Reconciliação</TabsTrigger>
-            <TabsTrigger value="xlsx-analysis">Análise XLSX</TabsTrigger>
-            <TabsTrigger value="ai-training">IA Treinamento</TabsTrigger>
-            <TabsTrigger value="test-data">Dados de Teste</TabsTrigger>
-          </TabsList>
+          <div className="flex items-center justify-between">
+            <div className="hidden lg:block flex-1">
+              <TabsList className="grid w-full grid-cols-10 lg:w-[1000px]">
+                <TabsTrigger value="overview">Visão Geral</TabsTrigger>
+                <TabsTrigger value="upload">Upload OFX</TabsTrigger>
+                <TabsTrigger value="transactions">Transações</TabsTrigger>
+                <TabsTrigger value="financial">Financeiro</TabsTrigger>
+
+                <TabsTrigger value="predictions">Previsões</TabsTrigger>
+                <TabsTrigger value="reconciliation">Reconciliação</TabsTrigger>
+                <TabsTrigger value="anomalies">Anomalias</TabsTrigger>
+                <TabsTrigger value="xlsx-analysis">Análise XLSX</TabsTrigger>
+                <TabsTrigger value="ai-training">IA Treinamento</TabsTrigger>
+                <TabsTrigger value="test-data">Dados de Teste</TabsTrigger>
+              </TabsList>
+            </div>
+
+            {/* Mobile Navigation */}
+            <div className="lg:hidden">
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    Menu
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="left" className="w-80">
+                  <SheetHeader>
+                    <SheetTitle>Navegação</SheetTitle>
+                    <SheetDescription>
+                      Selecione uma seção para navegar
+                    </SheetDescription>
+                  </SheetHeader>
+                  <div className="grid gap-2 py-4">
+                    {[
+                      { value: 'overview', label: 'Visão Geral' },
+                      { value: 'upload', label: 'Upload OFX' },
+                      { value: 'transactions', label: 'Transações' },
+                      { value: 'financial', label: 'Financeiro' },
+                      { value: 'predictions', label: 'Previsões' },
+                      { value: 'reconciliation', label: 'Reconciliação' },
+                      { value: 'anomalies', label: 'Anomalias' },
+                      { value: 'xlsx-analysis', label: 'Análise XLSX' },
+                      { value: 'ai-training', label: 'IA Treinamento' },
+                      { value: 'test-data', label: 'Dados de Teste' }
+                    ].map((tab) => (
+                      <Button
+                        key={tab.value}
+                        variant={activeTab === tab.value ? "default" : "ghost"}
+                        className="justify-start"
+                        onClick={() => setActiveTab(tab.value)}
+                      >
+                        {tab.label}
+                      </Button>
+                    ))}
+                  </div>
+                </SheetContent>
+              </Sheet>
+            </div>
+          </div>
 
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-6">
@@ -164,57 +326,85 @@ function App() {
               <>
                 {/* Cards de Resumo */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                  <Card className="bg-gradient-to-r from-green-500 to-green-600 text-white">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium">Total de Receitas</CardTitle>
-                      <TrendingUp className="h-4 w-4" />
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold">
-                        R$ {summary.overview.total_credits.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                      </div>
-                    </CardContent>
-                  </Card>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Card className="bg-gradient-to-r from-green-500 to-green-600 text-white cursor-help hover:shadow-lg transition-shadow">
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                          <CardTitle className="text-sm font-medium">Total de Receitas</CardTitle>
+                          <TrendingUp className="h-4 w-4" />
+                        </CardHeader>
+                        <CardContent>
+                          <div className="text-2xl font-bold">
+                            R$ {summary.overview.total_credits.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Total de todas as receitas processadas no sistema</p>
+                    </TooltipContent>
+                  </Tooltip>
 
-                  <Card className="bg-gradient-to-r from-red-500 to-red-600 text-white">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium">Total de Gastos</CardTitle>
-                      <TrendingDown className="h-4 w-4" />
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold">
-                        R$ {summary.overview.total_debits.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                      </div>
-                    </CardContent>
-                  </Card>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Card className="bg-gradient-to-r from-red-500 to-red-600 text-white cursor-help hover:shadow-lg transition-shadow">
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                          <CardTitle className="text-sm font-medium">Total de Gastos</CardTitle>
+                          <TrendingDown className="h-4 w-4" />
+                        </CardHeader>
+                        <CardContent>
+                          <div className="text-2xl font-bold">
+                            R$ {summary.overview.total_debits.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Total de todos os gastos processados no sistema</p>
+                    </TooltipContent>
+                  </Tooltip>
 
-                  <Card className="bg-gradient-to-r from-blue-500 to-blue-600 text-white">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium">Saldo Líquido</CardTitle>
-                      <DollarSign className="h-4 w-4" />
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold">
-                        R$ {summary.overview.net_flow.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                      </div>
-                    </CardContent>
-                  </Card>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Card className="bg-gradient-to-r from-blue-500 to-blue-600 text-white cursor-help hover:shadow-lg transition-shadow">
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                          <CardTitle className="text-sm font-medium">Saldo Líquido</CardTitle>
+                          <DollarSign className="h-4 w-4" />
+                        </CardHeader>
+                        <CardContent>
+                          <div className="text-2xl font-bold">
+                            R$ {summary.overview.net_flow.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Diferença entre receitas e gastos (Receitas - Gastos)</p>
+                    </TooltipContent>
+                  </Tooltip>
 
-                  <Card className="bg-gradient-to-r from-purple-500 to-purple-600 text-white">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium">Transações</CardTitle>
-                      <CreditCard className="h-4 w-4" />
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold">{summary.overview.total_transactions}</div>
-                      {summary.overview.anomalies_count > 0 && (
-                        <div className="flex items-center mt-2">
-                          <AlertTriangle className="h-3 w-3 mr-1" />
-                          <span className="text-xs">{summary.overview.anomalies_count} anomalias</span>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Card className="bg-gradient-to-r from-purple-500 to-purple-600 text-white cursor-help hover:shadow-lg transition-shadow">
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                          <CardTitle className="text-sm font-medium">Transações</CardTitle>
+                          <CreditCard className="h-4 w-4" />
+                        </CardHeader>
+                        <CardContent>
+                          <div className="text-2xl font-bold">{summary.overview.total_transactions}</div>
+                          {summary.overview.anomalies_count > 0 && (
+                            <div className="flex items-center mt-2">
+                              <AlertTriangle className="h-3 w-3 mr-1" />
+                              <span className="text-xs">{summary.overview.anomalies_count} anomalias</span>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Total de transações processadas • Anomalias detectadas pela IA</p>
+                    </TooltipContent>
+                  </Tooltip>
                 </div>
 
                 {/* Gráficos */}
@@ -247,7 +437,7 @@ function App() {
                                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                               ))}
                             </Pie>
-                            <Tooltip formatter={(value) => `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} />
+                            <RechartsTooltip formatter={(value) => `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} />
                           </RechartsPieChart>
                         </ResponsiveContainer>
                       </CardContent>
@@ -268,7 +458,7 @@ function App() {
                           <CartesianGrid strokeDasharray="3 3" />
                           <XAxis dataKey="name" />
                           <YAxis />
-                          <Tooltip />
+                          <RechartsTooltip />
                           <Bar dataKey="count" fill="#8884d8" />
                         </BarChart>
                       </ResponsiveContainer>
@@ -363,6 +553,11 @@ function App() {
             <Reconciliation />
           </TabsContent>
           
+          {/* Anomaly Management Tab */}
+          <TabsContent value="anomalies">
+            <AnomalyManagement />
+          </TabsContent>
+          
           {/* Test Data Deletion Tab */}
           <TabsContent value="test-data">
             <TestDataDeletion />
@@ -370,6 +565,7 @@ function App() {
         </Tabs>
       </main>
     </div>
+    </TooltipProvider>
   )
 }
 

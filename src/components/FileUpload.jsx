@@ -1,14 +1,19 @@
 import { useState, useRef } from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import * as z from 'zod'
 import { Button } from '@/components/ui/button.jsx'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx'
 import { Alert, AlertDescription } from '@/components/ui/alert.jsx'
 import { Progress } from '@/components/ui/progress.jsx'
 import { Badge } from '@/components/ui/badge.jsx'
-import { 
-  Upload, 
-  FileText, 
-  CheckCircle, 
-  AlertCircle, 
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form.jsx'
+import { Input } from '@/components/ui/input.jsx'
+import {
+  Upload,
+  FileText,
+  CheckCircle,
+  AlertCircle,
   Loader2,
   Building2
 } from 'lucide-react'
@@ -23,6 +28,28 @@ const FileUpload = ({ onUploadSuccess }) => {
   const [error, setError] = useState(null)
   const [duplicateFileError, setDuplicateFileError] = useState(null)
   const fileInputRef = useRef(null)
+
+  // Form validation schema
+  const fileUploadSchema = z.object({
+    file: z
+      .instanceof(File)
+      .refine((file) => file.size <= 16 * 1024 * 1024, {
+        message: 'Arquivo muito grande. Tamanho máximo: 16MB.'
+      })
+      .refine((file) => {
+        const extension = file.name.toLowerCase().split('.').pop()
+        return ['ofx', 'qfx', 'xlsx'].includes(extension)
+      }, {
+        message: 'Apenas arquivos .ofx, .qfx e .xlsx são suportados.'
+      })
+  })
+
+  const form = useForm({
+    resolver: zodResolver(fileUploadSchema),
+    defaultValues: {
+      file: null
+    }
+  })
 
   const supportedBanks = [
     { name: 'Caixa Econômica Federal', code: 'caixa' },
@@ -41,38 +68,13 @@ const FileUpload = ({ onUploadSuccess }) => {
     }
   }
 
-  const handleDrop = (e) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setDragActive(false)
-    
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFile(e.dataTransfer.files[0])
-    }
-  }
-
-  const handleFileInput = (e) => {
-    if (e.target.files && e.target.files[0]) {
-      handleFile(e.target.files[0])
-    }
-  }
-
-  const handleFile = async (file) => {
+  const onSubmit = async (values) => {
     setError(null)
     setUploadResult(null)
     setDuplicateFileError(null)
 
-    // Validações
+    const file = values.file
     const fileExtension = file.name.toLowerCase().split('.').pop();
-    if (!['ofx', 'qfx', 'xlsx'].includes(fileExtension)) {
-      setError('Apenas arquivos .ofx, .qfx e .xlsx são suportados.')
-      return
-    }
-
-    if (file.size > 16 * 1024 * 1024) { // 16MB
-      setError('Arquivo muito grande. Tamanho máximo: 16MB.')
-      return
-    }
 
     setUploading(true)
 
@@ -110,9 +112,6 @@ const FileUpload = ({ onUploadSuccess }) => {
     }
   }
 
-  const openFileDialog = () => {
-    fileInputRef.current?.click()
-  }
 
   return (
     <div className="space-y-6">
@@ -153,51 +152,109 @@ const FileUpload = ({ onUploadSuccess }) => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div
-            className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-              dragActive 
-                ? 'border-blue-500 bg-blue-50' 
-                : 'border-gray-300 hover:border-gray-400'
-            }`}
-            onDragEnter={handleDrag}
-            onDragLeave={handleDrag}
-            onDragOver={handleDrag}
-            onDrop={handleDrop}
-          >
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".ofx,.qfx,.xlsx"
-              onChange={handleFileInput}
-              className="hidden"
-            />
-            
-            {uploading ? (
-              <div className="space-y-4">
-                <Loader2 className="h-12 w-12 text-blue-500 mx-auto animate-spin" />
-                <div>
-                  <p className="text-lg font-medium text-gray-900">Processando arquivo...</p>
-                  <p className="text-sm text-gray-500">Analisando dados e aplicando IA</p>
-                </div>
-                <Progress value={75} className="w-full max-w-xs mx-auto" />
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <FileText className="h-12 w-12 text-gray-400 mx-auto" />
-                <div>
-                  <p className="text-lg font-medium text-gray-900">
-                    Selecione um arquivo OFX ou XLSX
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    Formatos suportados: .ofx, .qfx, .xlsx (máx. 16MB)
-                  </p>
-                </div>
-                <Button onClick={openFileDialog} disabled={uploading}>
-                  Selecionar Arquivo
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <FormField
+                control={form.control}
+                name="file"
+                render={({ field: { onChange, value, ...field } }) => (
+                  <FormItem>
+                    <FormControl>
+                      <div
+                        className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+                          dragActive
+                            ? 'border-blue-500 bg-blue-50'
+                            : 'border-gray-300 hover:border-gray-400'
+                        }`}
+                        onDragEnter={handleDrag}
+                        onDragLeave={handleDrag}
+                        onDragOver={handleDrag}
+                        onDrop={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          setDragActive(false)
+
+                          if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                            const file = e.dataTransfer.files[0]
+                            onChange(file)
+                          }
+                        }}
+                      >
+                        <input
+                          {...field}
+                          ref={fileInputRef}
+                          type="file"
+                          accept=".ofx,.qfx,.xlsx"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0]
+                            if (file) {
+                              onChange(file)
+                            }
+                          }}
+                          className="hidden"
+                        />
+
+                        {uploading ? (
+                          <div className="space-y-4">
+                            <Loader2 className="h-12 w-12 text-blue-500 mx-auto animate-spin" />
+                            <div>
+                              <p className="text-lg font-medium text-gray-900">Processando arquivo...</p>
+                              <p className="text-sm text-gray-500">Analisando dados e aplicando IA</p>
+                            </div>
+                            <Progress value={75} className="w-full max-w-xs mx-auto" />
+                          </div>
+                        ) : (
+                          <div className="space-y-4">
+                            <FileText className="h-12 w-12 text-gray-400 mx-auto" />
+                            <div>
+                              <p className="text-lg font-medium text-gray-900">
+                                Selecione um arquivo OFX ou XLSX
+                              </p>
+                              <p className="text-sm text-gray-500">
+                                Formatos suportados: .ofx, .qfx, .xlsx (máx. 16MB)
+                              </p>
+                              {value && (
+                                <p className="text-sm text-blue-600 mt-2">
+                                  Arquivo selecionado: {value.name}
+                                </p>
+                              )}
+                            </div>
+                            <Button
+                              type="button"
+                              onClick={() => fileInputRef.current?.click()}
+                              disabled={uploading}
+                            >
+                              Selecionar Arquivo
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    </FormControl>
+                    <FormDescription>
+                      Arraste e solte o arquivo aqui ou clique para selecionar
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="flex justify-center">
+                <Button type="submit" disabled={uploading || !form.watch('file')}>
+                  {uploading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Processando...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="mr-2 h-4 w-4" />
+                      Fazer Upload
+                    </>
+                  )}
                 </Button>
               </div>
-            )}
-          </div>
+            </form>
+          </Form>
         </CardContent>
       </Card>
 

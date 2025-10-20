@@ -4,20 +4,30 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input.jsx'
 import { Badge } from '@/components/ui/badge.jsx'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select.jsx'
+import { Checkbox } from '@/components/ui/checkbox.jsx'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table.jsx'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog.jsx'
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog.jsx'
 import API_CONFIG from '@/config/api.js'
 import { get, put, ApiError } from '@/services/apiService.js'
-import { 
-  Search, 
-  Filter, 
-  TrendingUp, 
-  TrendingDown, 
+import {
+  Search,
+  Filter,
+  TrendingUp,
+  TrendingDown,
   AlertTriangle,
   Calendar,
   Building2,
   Tag,
   CheckCircle,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  Eye,
+  Trash2,
+  MoreHorizontal
 } from 'lucide-react'
 
 const TransactionsList = ({ transactions: initialTransactions }) => {
@@ -28,6 +38,9 @@ const TransactionsList = ({ transactions: initialTransactions }) => {
   const [editValues, setEditValues] = useState({})
   const [saving, setSaving] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
+  const [selectedRows, setSelectedRows] = useState([])
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' })
+  const [viewingTransaction, setViewingTransaction] = useState(null)
   const [filters, setFilters] = useState({
     search: '',
     bank: 'all',
@@ -81,7 +94,7 @@ const TransactionsList = ({ transactions: initialTransactions }) => {
 
     // Filtro de busca
     if (filters.search) {
-      filtered = filtered.filter(t => 
+      filtered = filtered.filter(t =>
         t.description.toLowerCase().includes(filters.search.toLowerCase())
       )
     }
@@ -109,6 +122,34 @@ const TransactionsList = ({ transactions: initialTransactions }) => {
       filtered = filtered.filter(t => new Date(t.date) <= new Date(filters.endDate))
     }
 
+    // Apply sorting
+    if (sortConfig.key) {
+      filtered.sort((a, b) => {
+        let aValue = a[sortConfig.key]
+        let bValue = b[sortConfig.key]
+
+        // Handle different data types
+        if (sortConfig.key === 'amount') {
+          aValue = Math.abs(aValue)
+          bValue = Math.abs(bValue)
+        } else if (sortConfig.key === 'date') {
+          aValue = new Date(aValue)
+          bValue = new Date(bValue)
+        } else if (typeof aValue === 'string') {
+          aValue = aValue.toLowerCase()
+          bValue = bValue.toLowerCase()
+        }
+
+        if (aValue < bValue) {
+          return sortConfig.direction === 'asc' ? -1 : 1
+        }
+        if (aValue > bValue) {
+          return sortConfig.direction === 'asc' ? 1 : -1
+        }
+        return 0
+      })
+    }
+
     setFilteredTransactions(filtered)
     setCurrentPage(1)
   }
@@ -126,6 +167,55 @@ const TransactionsList = ({ transactions: initialTransactions }) => {
       startDate: '',
       endDate: ''
     })
+  }
+
+  // Sorting functionality
+  const handleSort = (key) => {
+    let direction = 'asc'
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc'
+    }
+    setSortConfig({ key, direction })
+  }
+
+  const getSortIcon = (key) => {
+    if (sortConfig.key !== key) return <ArrowUpDown className="h-4 w-4" />
+    return sortConfig.direction === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
+  }
+
+  // Row selection functionality
+  const handleSelectAll = (checked) => {
+    if (checked) {
+      setSelectedRows(filteredTransactions.map(t => t.id))
+    } else {
+      setSelectedRows([])
+    }
+  }
+
+  const handleSelectRow = (transactionId, checked) => {
+    if (checked) {
+      setSelectedRows(prev => [...prev, transactionId])
+    } else {
+      setSelectedRows(prev => prev.filter(id => id !== transactionId))
+    }
+  }
+
+  const isAllSelected = filteredTransactions.length > 0 && selectedRows.length === filteredTransactions.length
+  const isIndeterminate = selectedRows.length > 0 && selectedRows.length < filteredTransactions.length
+
+  // Bulk operations
+  const handleBulkDelete = async () => {
+    if (selectedRows.length === 0) return
+
+    // Here you would implement bulk delete logic
+    console.log('Deleting transactions:', selectedRows)
+    // For now, just clear selection
+    setSelectedRows([])
+  }
+
+  // View transaction details
+  const handleViewTransaction = (transaction) => {
+    setViewingTransaction(transaction)
   }
 
   const startEdit = (tx) => {
@@ -197,9 +287,9 @@ const TransactionsList = ({ transactions: initialTransactions }) => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="transactions-list">
       {/* Filtros */}
-      <Card>
+      <Card data-testid="transactions-filters">
         <CardHeader>
           <CardTitle className="flex items-center">
             <Filter className="h-5 w-5 mr-2" />
@@ -221,6 +311,7 @@ const TransactionsList = ({ transactions: initialTransactions }) => {
                   value={filters.search}
                   onChange={(e) => handleFilterChange('search', e.target.value)}
                   className="pl-10"
+                  data-testid="search-input"
                 />
               </div>
             </div>
@@ -229,7 +320,7 @@ const TransactionsList = ({ transactions: initialTransactions }) => {
             <div className="space-y-2">
               <label className="text-sm font-medium">Banco</label>
               <Select value={filters.bank} onValueChange={(value) => handleFilterChange('bank', value)}>
-                <SelectTrigger>
+                <SelectTrigger data-testid="bank-select">
                   <SelectValue placeholder="Todos os bancos" />
                 </SelectTrigger>
                 <SelectContent>
@@ -245,7 +336,7 @@ const TransactionsList = ({ transactions: initialTransactions }) => {
             <div className="space-y-2">
               <label className="text-sm font-medium">Categoria</label>
               <Select value={filters.category} onValueChange={(value) => handleFilterChange('category', value)}>
-                <SelectTrigger>
+                <SelectTrigger data-testid="category-select">
                   <SelectValue placeholder="Todas as categorias" />
                 </SelectTrigger>
                 <SelectContent>
@@ -263,7 +354,7 @@ const TransactionsList = ({ transactions: initialTransactions }) => {
             <div className="space-y-2">
               <label className="text-sm font-medium">Tipo</label>
               <Select value={filters.type} onValueChange={(value) => handleFilterChange('type', value)}>
-                <SelectTrigger>
+                <SelectTrigger data-testid="type-select">
                   <SelectValue placeholder="Todos os tipos" />
                 </SelectTrigger>
                 <SelectContent>
@@ -281,6 +372,7 @@ const TransactionsList = ({ transactions: initialTransactions }) => {
                 type="date"
                 value={filters.startDate}
                 onChange={(e) => handleFilterChange('startDate', e.target.value)}
+                data-testid="start-date-input"
               />
             </div>
 
@@ -291,6 +383,7 @@ const TransactionsList = ({ transactions: initialTransactions }) => {
                 type="date"
                 value={filters.endDate}
                 onChange={(e) => handleFilterChange('endDate', e.target.value)}
+                data-testid="end-date-input"
               />
             </div>
           </div>
@@ -299,131 +392,297 @@ const TransactionsList = ({ transactions: initialTransactions }) => {
             <p className="text-sm text-gray-600">
               {filteredTransactions.length} transação(ões) encontrada(s)
             </p>
-            <Button variant="outline" onClick={clearFilters}>
-              Limpar Filtros
-            </Button>
+            <div className="flex gap-2">
+              {selectedRows.length > 0 && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" size="sm">
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Excluir Selecionadas ({selectedRows.length})
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Tem certeza que deseja excluir {selectedRows.length} transação(ões) selecionada(s)?
+                        Esta ação não pode ser desfeita.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleBulkDelete} className="bg-red-600 hover:bg-red-700">
+                        Excluir
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+              <Button variant="outline" onClick={clearFilters} data-testid="clear-filters-button">
+                Limpar Filtros
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
 
       {/* Lista de Transações */}
-      <Card>
+      <Card data-testid="transactions-table-card">
         <CardHeader>
           <CardTitle>Transações</CardTitle>
           <CardDescription>
-            Página {currentPage} de {totalPages}
+            Página {currentPage} de {totalPages} • {selectedRows.length} selecionada(s)
           </CardDescription>
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="flex justify-center py-8">
+            <div className="flex justify-center py-8" data-testid="loading-spinner">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
             </div>
           ) : currentTransactions.length > 0 ? (
-            <div className="space-y-3">
-              {currentTransactions.map((transaction, index) => (
-                <div
-                  key={transaction.id || index}
-                  className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-                >
-                  <div className="flex-1 space-y-1">
-                    <div className="flex items-center space-x-2">
-                      <p className="font-medium text-sm">{transaction.description}</p>
-                      {transaction.is_anomaly && (
-                        <Badge variant="destructive" className="text-xs">
-                          <AlertTriangle className="h-3 w-3 mr-1" />
-                          Anomalia
-                        </Badge>
-                      )}
-                      {(
-                        (transaction.is_reconciled === true) ||
-                        (!transaction.is_anomaly && transaction.justificativa && String(transaction.justificativa).trim() !== '')
-                      ) && (
-                        <Badge variant="secondary" className="text-xs bg-emerald-100 text-emerald-800">
-                          <CheckCircle className="h-3 w-3 mr-1" />
-                          Encontrado
-                        </Badge>
-                      )}
-                    </div>
-                    
-                    <div className="flex items-center space-x-4 text-xs text-gray-500">
-                      <div className="flex items-center">
-                        <Calendar className="h-3 w-3 mr-1" />
-                        {new Date(transaction.date).toLocaleDateString('pt-BR')}
-                      </div>
-                      <div className="flex items-center">
-                        <Building2 className="h-3 w-3 mr-1" />
-                        {transaction.bank_name}
-                      </div>
-                      {transaction.category && (
-                        <Badge variant="secondary" className={`text-xs ${getCategoryColor(transaction.category)}`}>
-                          <Tag className="h-3 w-3 mr-1" />
-                          {transaction.category.charAt(0).toUpperCase() + transaction.category.slice(1)}
-                        </Badge>
-                      )}
-                    </div>
-
-                    {editingId === transaction.id && (
-                      <div className="mt-3 p-3 bg-white rounded border">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                          <div>
-                            <label className="text-xs font-medium">Data</label>
-                            <Input type="date" value={editValues.date || ''} onChange={(e) => handleEditChange('date', e.target.value)} />
-                          </div>
-                          <div>
-                            <label className="text-xs font-medium">Valor</label>
-                            <Input type="number" step="0.01" value={editValues.amount ?? ''} onChange={(e) => handleEditChange('amount', parseFloat(e.target.value) || 0)} />
-                          </div>
-                          <div className="md:col-span-2">
-                            <label className="text-xs font-medium">Descrição</label>
-                            <Input value={editValues.description || ''} onChange={(e) => handleEditChange('description', e.target.value)} />
-                          </div>
-                          <div>
-                            <label className="text-xs font-medium">Categoria</label>
-                            <Input value={editValues.category || ''} onChange={(e) => handleEditChange('category', e.target.value)} />
-                          </div>
-                          <div>
-                            <label className="text-xs font-medium">Tipo</label>
-                            <Select value={editValues.transaction_type} onValueChange={(v) => handleEditChange('transaction_type', v)}>
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="debit">Gasto</SelectItem>
-                                <SelectItem value="credit">Receita</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="md:col-span-2">
-                            <label className="text-xs font-medium">Justificativa</label>
-                            <Input value={editValues.justificativa || ''} onChange={(e) => handleEditChange('justificativa', e.target.value)} placeholder="Explique o ajuste realizado" />
-                          </div>
+            <div className="space-y-4">
+              <Table data-testid="transactions-table">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-12">
+                      <Checkbox
+                        checked={isAllSelected}
+                        onCheckedChange={handleSelectAll}
+                        aria-label="Selecionar todas"
+                      />
+                    </TableHead>
+                    <TableHead>
+                      <Button
+                        variant="ghost"
+                        onClick={() => handleSort('date')}
+                        className="h-auto p-0 font-medium hover:bg-transparent"
+                      >
+                        Data
+                        {getSortIcon('date')}
+                      </Button>
+                    </TableHead>
+                    <TableHead>
+                      <Button
+                        variant="ghost"
+                        onClick={() => handleSort('description')}
+                        className="h-auto p-0 font-medium hover:bg-transparent"
+                      >
+                        Descrição
+                        {getSortIcon('description')}
+                      </Button>
+                    </TableHead>
+                    <TableHead>
+                      <Button
+                        variant="ghost"
+                        onClick={() => handleSort('bank_name')}
+                        className="h-auto p-0 font-medium hover:bg-transparent"
+                      >
+                        Banco
+                        {getSortIcon('bank_name')}
+                      </Button>
+                    </TableHead>
+                    <TableHead>
+                      <Button
+                        variant="ghost"
+                        onClick={() => handleSort('category')}
+                        className="h-auto p-0 font-medium hover:bg-transparent"
+                      >
+                        Categoria
+                        {getSortIcon('category')}
+                      </Button>
+                    </TableHead>
+                    <TableHead className="text-right">
+                      <Button
+                        variant="ghost"
+                        onClick={() => handleSort('amount')}
+                        className="h-auto p-0 font-medium hover:bg-transparent"
+                      >
+                        Valor
+                        {getSortIcon('amount')}
+                      </Button>
+                    </TableHead>
+                    <TableHead className="w-24">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {currentTransactions.map((transaction) => (
+                    <TableRow key={transaction.id || transaction.description}>
+                      <TableCell>
+                        <Checkbox
+                          checked={selectedRows.includes(transaction.id)}
+                          onCheckedChange={(checked) => handleSelectRow(transaction.id, checked)}
+                          aria-label={`Selecionar ${transaction.description}`}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center space-x-2">
+                          <Calendar className="h-4 w-4 text-gray-400" />
+                          <span className="text-sm">
+                            {new Date(transaction.date).toLocaleDateString('pt-BR')}
+                          </span>
                         </div>
-                        <div className="flex gap-2 justify-end mt-3">
-                          <Button variant="outline" onClick={cancelEdit}>Cancelar</Button>
-                          <Button onClick={saveEdit} disabled={saving}>{saving ? 'Salvando...' : 'Salvar'}</Button>
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-1">
+                          <div className="flex items-center space-x-2">
+                            <span className="font-medium text-sm">{transaction.description}</span>
+                            {transaction.is_anomaly && (
+                              <Badge variant="destructive" className="text-xs">
+                                <AlertTriangle className="h-3 w-3 mr-1" />
+                                Anomalia
+                              </Badge>
+                            )}
+                            {(
+                              (transaction.is_reconciled === true) ||
+                              (!transaction.is_anomaly && transaction.justificativa && String(transaction.justificativa).trim() !== '')
+                            ) && (
+                              <Badge variant="secondary" className="text-xs bg-emerald-100 text-emerald-800">
+                                <CheckCircle className="h-3 w-3 mr-1" />
+                                Encontrado
+                              </Badge>
+                            )}
+                          </div>
+                          {editingId === transaction.id && (
+                            <div className="mt-2 p-2 bg-gray-50 rounded border text-xs">
+                              <div className="grid grid-cols-2 gap-2">
+                                <Input
+                                  type="date"
+                                  value={editValues.date || ''}
+                                  onChange={(e) => handleEditChange('date', e.target.value)}
+                                  placeholder="Data"
+                                />
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  value={editValues.amount ?? ''}
+                                  onChange={(e) => handleEditChange('amount', parseFloat(e.target.value) || 0)}
+                                  placeholder="Valor"
+                                />
+                                <Input
+                                  value={editValues.description || ''}
+                                  onChange={(e) => handleEditChange('description', e.target.value)}
+                                  placeholder="Descrição"
+                                />
+                                <Input
+                                  value={editValues.category || ''}
+                                  onChange={(e) => handleEditChange('category', e.target.value)}
+                                  placeholder="Categoria"
+                                />
+                              </div>
+                              <div className="flex gap-1 justify-end mt-2">
+                                <Button size="sm" variant="outline" onClick={cancelEdit}>Cancelar</Button>
+                                <Button size="sm" onClick={saveEdit} disabled={saving}>
+                                  {saving ? 'Salvando...' : 'Salvar'}
+                                </Button>
+                              </div>
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex items-center space-x-3">
-                    <div className={`flex items-center font-bold ${
-                      transaction.amount > 0 ? 'text-green-600' : 'text-red-600'
-                    }`}>
-                      {transaction.amount > 0 ? (
-                        <TrendingUp className="h-4 w-4 mr-1" />
-                      ) : (
-                        <TrendingDown className="h-4 w-4 mr-1" />
-                      )}
-                      {transaction.amount > 0 ? '+' : ''}R$ {Math.abs(transaction.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                    </div>
-                    {transaction.is_anomaly && editingId !== transaction.id && (
-                      <Button size="sm" variant="outline" onClick={() => startEdit(transaction)}>Ajustar</Button>
-                    )}
-                  </div>
-                </div>
-              ))}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center space-x-2">
+                          <Building2 className="h-4 w-4 text-gray-400" />
+                          <span className="text-sm">{transaction.bank_name}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {transaction.category && (
+                          <Badge variant="secondary" className={`text-xs ${getCategoryColor(transaction.category)}`}>
+                            <Tag className="h-3 w-3 mr-1" />
+                            {transaction.category.charAt(0).toUpperCase() + transaction.category.slice(1)}
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className={`flex items-center justify-end font-bold ${
+                          transaction.amount > 0 ? 'text-green-600' : 'text-red-600'
+                        }`}>
+                          {transaction.amount > 0 ? (
+                            <TrendingUp className="h-4 w-4 mr-1" />
+                          ) : (
+                            <TrendingDown className="h-4 w-4 mr-1" />
+                          )}
+                          {transaction.amount > 0 ? '+' : ''}R$ {Math.abs(transaction.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center space-x-1">
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleViewTransaction(transaction)}
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-2xl">
+                              <DialogHeader>
+                                <DialogTitle>Detalhes da Transação</DialogTitle>
+                                <DialogDescription>
+                                  Informações completas sobre esta transação
+                                </DialogDescription>
+                              </DialogHeader>
+                              {viewingTransaction && (
+                                <div className="space-y-4">
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                      <label className="text-sm font-medium">Data</label>
+                                      <p className="text-sm text-gray-600">
+                                        {new Date(viewingTransaction.date).toLocaleDateString('pt-BR')}
+                                      </p>
+                                    </div>
+                                    <div>
+                                      <label className="text-sm font-medium">Valor</label>
+                                      <p className={`text-sm font-bold ${
+                                        viewingTransaction.amount > 0 ? 'text-green-600' : 'text-red-600'
+                                      }`}>
+                                        R$ {Math.abs(viewingTransaction.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                      </p>
+                                    </div>
+                                    <div>
+                                      <label className="text-sm font-medium">Banco</label>
+                                      <p className="text-sm text-gray-600">{viewingTransaction.bank_name}</p>
+                                    </div>
+                                    <div>
+                                      <label className="text-sm font-medium">Tipo</label>
+                                      <p className="text-sm text-gray-600">
+                                        {viewingTransaction.transaction_type === 'credit' ? 'Receita' : 'Gasto'}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <label className="text-sm font-medium">Descrição</label>
+                                    <p className="text-sm text-gray-600">{viewingTransaction.description}</p>
+                                  </div>
+                                  {viewingTransaction.category && (
+                                    <div>
+                                      <label className="text-sm font-medium">Categoria</label>
+                                      <p className="text-sm text-gray-600">{viewingTransaction.category}</p>
+                                    </div>
+                                  )}
+                                  {viewingTransaction.justificativa && (
+                                    <div>
+                                      <label className="text-sm font-medium">Justificativa</label>
+                                      <p className="text-sm text-gray-600">{viewingTransaction.justificativa}</p>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </DialogContent>
+                          </Dialog>
+                          {transaction.is_anomaly && editingId !== transaction.id && (
+                            <Button size="sm" variant="outline" onClick={() => startEdit(transaction)}>
+                              Ajustar
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
           ) : (
             <div className="text-center py-8">

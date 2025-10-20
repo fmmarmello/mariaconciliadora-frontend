@@ -11,7 +11,9 @@ import {
   RefreshCw,
   BarChart3,
   Calendar,
-  AlertTriangle
+  AlertTriangle,
+  Brain,
+  ToggleLeft
 } from 'lucide-react'
 import {
   LineChart,
@@ -25,12 +27,14 @@ import {
   Bar
 } from 'recharts'
 import { get, post, ApiError } from '@/services/apiService';
+import { anomalyDetectionService } from '@/services/anomalyDetectionService.js';
 
 const Reconciliation = () => {
   const [pendingRecords, setPendingRecords] = useState([])
   const [report, setReport] = useState(null)
   const [loading, setLoading] = useState(true)
   const [reconciling, setReconciling] = useState(false)
+  const [anomalyMode, setAnomalyMode] = useState(false)
   const [error, setError] = useState(null)
 
   useEffect(() => {
@@ -91,6 +95,37 @@ const Reconciliation = () => {
         setError(err.message)
       } else {
         setError('Erro ao iniciar reconciliação: ' + err.message)
+      }
+    } finally {
+      setReconciling(false)
+    }
+  }
+
+  const startAnomalyDetectionReconciliation = async () => {
+    setReconciling(true)
+    setError(null)
+    
+    try {
+      const params = {
+        start_date: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 dias atrás
+        end_date: new Date().toISOString().split('T')[0],
+        user_id: 1 // TODO: Get from auth context
+      }
+      
+      const data = await anomalyDetectionService.processReconciliationWithAnomalyDetection(params)
+      
+      if (data.success) {
+        // Atualiza os dados após a reconciliação com detecção de anomalias
+        fetchPendingReconciliations()
+        fetchReconciliationReport()
+      } else {
+        setError(data.error || 'Erro ao iniciar reconciliação com detecção de anomalias')
+      }
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError(err.message)
+      } else {
+        setError('Erro ao iniciar reconciliação com detecção de anomalias: ' + err.message)
       }
     } finally {
       setReconciling(false)
@@ -187,27 +222,72 @@ const Reconciliation = () => {
             </div>
             
             <div className="mt-4 pt-4 border-t">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-700">
-                  Valor Reconciliado: R$ {report.financials.total_reconciled_value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                </span>
-                <Button 
-                  onClick={startReconciliation} 
-                  disabled={reconciling}
-                  variant="outline"
-                >
-                  {reconciling ? (
-                    <>
-                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                      Reconciliando...
-                    </>
-                  ) : (
-                    <>
-                      <RefreshCw className="h-4 w-4 mr-2" />
-                      Iniciar Reconciliação
-                    </>
-                  )}
-                </Button>
+              <div className="flex flex-col space-y-4">
+                {/* Toggle para modo de detecção de anomalias */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <Brain className="h-4 w-4 text-blue-600" />
+                    <span className="text-sm font-medium text-gray-700">
+                      Modo de Detecção de Anomalias
+                    </span>
+                    <Badge variant={anomalyMode ? "default" : "secondary"}>
+                      {anomalyMode ? "Ativado" : "Desativado"}
+                    </Badge>
+                  </div>
+                  <Button 
+                    onClick={() => setAnomalyMode(!anomalyMode)}
+                    variant="outline"
+                    size="sm"
+                  >
+                    <ToggleLeft className="h-4 w-4 mr-2" />
+                    {anomalyMode ? "Desativar" : "Ativar"}
+                  </Button>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-gray-700">
+                    Valor Reconciliado: R$ {report.financials.total_reconciled_value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </span>
+                  <div className="flex space-x-2">
+                    <Button 
+                      onClick={startReconciliation} 
+                      disabled={reconciling}
+                      variant="outline"
+                    >
+                      {reconciling ? (
+                        <>
+                          <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                          Reconciliando...
+                        </>
+                      ) : (
+                        <>
+                          <RefreshCw className="h-4 w-4 mr-2" />
+                          Iniciar Reconciliação
+                        </>
+                      )}
+                    </Button>
+                    
+                    {anomalyMode && (
+                      <Button 
+                        onClick={startAnomalyDetectionReconciliation} 
+                        disabled={reconciling}
+                        className="bg-blue-600 hover:bg-blue-700"
+                      >
+                        {reconciling ? (
+                          <>
+                            <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                            Detectando...
+                          </>
+                        ) : (
+                          <>
+                            <Brain className="h-4 w-4 mr-2" />
+                            Reconciliar com IA
+                          </>
+                        )}
+                      </Button>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           </CardContent>
@@ -310,10 +390,16 @@ const Reconciliation = () => {
             <p className="text-gray-500 text-center mb-4">
               Todas as correspondências foram confirmadas ou rejeitadas.
             </p>
-            <Button onClick={startReconciliation} variant="outline">
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Iniciar Nova Reconciliação
-            </Button>
+            <div className="flex space-x-2">
+              <Button onClick={startReconciliation} variant="outline">
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Iniciar Reconciliação
+              </Button>
+              <Button onClick={() => setAnomalyMode(true)} className="bg-blue-600 hover:bg-blue-700">
+                <Brain className="h-4 w-4 mr-2" />
+                Ativar Modo IA
+              </Button>
+            </div>
           </CardContent>
         </Card>
       )}

@@ -5,13 +5,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs.j
 import { Badge } from '@/components/ui/badge.jsx'
 import { Alert, AlertDescription } from '@/components/ui/alert.jsx'
 import { Progress } from '@/components/ui/progress.jsx'
-import { 
-  Upload, 
-  TrendingUp, 
-  TrendingDown, 
-  DollarSign, 
-  CreditCard, 
-  PieChart, 
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table.jsx'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip.jsx'
+import {
+  Upload,
+  TrendingUp,
+  TrendingDown,
+  DollarSign,
+  CreditCard,
+  PieChart,
   BarChart3,
   AlertTriangle,
   FileText,
@@ -19,22 +21,25 @@ import {
   Sparkles,
   Calendar,
   Building2,
-  CheckCircle
+  CheckCircle,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-react'
-import { 
-  LineChart, 
-  Line, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer,
-  PieChart as RechartsPieChart,
-  Pie,
-  Cell,
-  BarChart,
-  Bar
-} from 'recharts'
+import {
+   LineChart,
+   Line,
+   XAxis,
+   YAxis,
+   CartesianGrid,
+   Tooltip as RechartsTooltip,
+   ResponsiveContainer,
+   PieChart as RechartsPieChart,
+   Pie,
+   Cell,
+   BarChart,
+   Bar
+ } from 'recharts'
 import { get, post, ApiError } from '@/services/apiService.js'
 import FinancialTrackerCorrections from './FinancialTrackerCorrections.jsx'
 
@@ -47,6 +52,7 @@ const FinancialTracker = () => {
   const [error, setError] = useState(null)
   const [dragActive, setDragActive] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' })
 
   // Cores para os gráficos
   const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#8dd1e1', '#d084d0']
@@ -198,6 +204,48 @@ const FinancialTracker = () => {
     setUploadResult(null)
   }
 
+  // Sorting functionality
+  const handleSort = (key) => {
+    let direction = 'asc'
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc'
+    }
+    setSortConfig({ key, direction })
+  }
+
+  const getSortIcon = (key) => {
+    if (sortConfig.key !== key) return <ArrowUpDown className="h-4 w-4" />
+    return sortConfig.direction === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
+  }
+
+  // Sort entries based on current sort config
+  const sortedEntries = [...entries].sort((a, b) => {
+    if (!sortConfig.key) return 0
+
+    let aValue = a[sortConfig.key]
+    let bValue = b[sortConfig.key]
+
+    // Handle different data types
+    if (sortConfig.key === 'amount') {
+      aValue = Math.abs(aValue)
+      bValue = Math.abs(bValue)
+    } else if (sortConfig.key === 'date') {
+      aValue = new Date(aValue)
+      bValue = new Date(bValue)
+    } else if (typeof aValue === 'string') {
+      aValue = aValue.toLowerCase()
+      bValue = bValue.toLowerCase()
+    }
+
+    if (aValue < bValue) {
+      return sortConfig.direction === 'asc' ? -1 : 1
+    }
+    if (aValue > bValue) {
+      return sortConfig.direction === 'asc' ? 1 : -1
+    }
+    return 0
+  })
+
   if (loading) {
     return (
       <div className="flex justify-center py-8">
@@ -294,7 +342,7 @@ const FinancialTracker = () => {
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>
-                      <Tooltip formatter={(value) => `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} />
+                      <RechartsTooltip formatter={(value) => `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} />
                     </RechartsPieChart>
                   </ResponsiveContainer>
                 </CardContent>
@@ -415,37 +463,128 @@ const FinancialTracker = () => {
               Entradas Financeiras
             </CardTitle>
             <CardDescription>
-              Lista de despesas e receitas da empresa
+              Lista de despesas e receitas da empresa • {entries.length} entradas
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {entries.map((entry, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div className="flex-1">
-                    <p className="font-medium text-sm">{entry.description}</p>
-                    <div className="flex items-center text-xs text-gray-500 space-x-2">
-                      <span>{entry.category}</span>
-                      <span>•</span>
-                      <span>{entry.cost_center || 'Sem centro de custo'}</span>
-                      <span>•</span>
-                      <span>{entry.department || 'Sem departamento'}</span>
-                      <span>•</span>
-                      <span>{new Date(entry.date).toLocaleDateString('pt-BR')}</span>
-                      {(entry.is_reconciled === true || (entry.justificativa && String(entry.justificativa).trim() !== '')) && (
-                        <Badge variant="secondary" className="ml-2 bg-emerald-100 text-emerald-800">
-                          <CheckCircle className="h-3 w-3 mr-1" />
-                          Encontrado
+            <TooltipProvider>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>
+                      <Button
+                        variant="ghost"
+                        onClick={() => handleSort('date')}
+                        className="h-auto p-0 font-medium hover:bg-transparent"
+                      >
+                        Data
+                        {getSortIcon('date')}
+                      </Button>
+                    </TableHead>
+                    <TableHead>
+                      <Button
+                        variant="ghost"
+                        onClick={() => handleSort('description')}
+                        className="h-auto p-0 font-medium hover:bg-transparent"
+                      >
+                        Descrição
+                        {getSortIcon('description')}
+                      </Button>
+                    </TableHead>
+                    <TableHead>
+                      <Button
+                        variant="ghost"
+                        onClick={() => handleSort('category')}
+                        className="h-auto p-0 font-medium hover:bg-transparent"
+                      >
+                        Categoria
+                        {getSortIcon('category')}
+                      </Button>
+                    </TableHead>
+                    <TableHead>Centro de Custo</TableHead>
+                    <TableHead>Departamento</TableHead>
+                    <TableHead className="text-right">
+                      <Button
+                        variant="ghost"
+                        onClick={() => handleSort('amount')}
+                        className="h-auto p-0 font-medium hover:bg-transparent"
+                      >
+                        Valor
+                        {getSortIcon('amount')}
+                      </Button>
+                    </TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {sortedEntries.map((entry, index) => (
+                    <TableRow key={entry.id || index}>
+                      <TableCell>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="flex items-center space-x-2 cursor-help">
+                              <Calendar className="h-4 w-4 text-gray-400" />
+                              <span className="text-sm">
+                                {new Date(entry.date).toLocaleDateString('pt-BR')}
+                              </span>
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Data da transação financeira</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TableCell>
+                      <TableCell>
+                        <div className="max-w-xs">
+                          <p className="font-medium text-sm truncate" title={entry.description}>
+                            {entry.description}
+                          </p>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary" className="text-xs">
+                          {entry.category}
                         </Badge>
-                      )}
-                    </div>
-                  </div>
-                  <div className={`font-bold ${entry.transaction_type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
-                    {entry.transaction_type === 'income' ? '+' : ''}R$ {Math.abs(entry.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                  </div>
-                </div>
-              ))}
-            </div>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm text-gray-600">
+                          {entry.cost_center || 'N/A'}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm text-gray-600">
+                          {entry.department || 'N/A'}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className={`font-bold ${entry.transaction_type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+                          {entry.transaction_type === 'income' ? '+' : ''}R$ {Math.abs(entry.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {(entry.is_reconciled === true || (entry.justificativa && String(entry.justificativa).trim() !== '')) ? (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Badge variant="secondary" className="bg-emerald-100 text-emerald-800 cursor-help">
+                                <CheckCircle className="h-3 w-3 mr-1" />
+                                Encontrado
+                              </Badge>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Esta entrada foi reconciliada ou possui justificativa</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        ) : (
+                          <Badge variant="outline" className="text-gray-500">
+                            Pendente
+                          </Badge>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TooltipProvider>
           </CardContent>
         </Card>
       )}
