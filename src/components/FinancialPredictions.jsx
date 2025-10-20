@@ -28,6 +28,7 @@ const FinancialPredictions = () => {
   const [predictions, setPredictions] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [unavailable, setUnavailable] = useState(null)
   const [timeframe, setTimeframe] = useState('12') // 6, 12, or 24 months
 
   useEffect(() => {
@@ -37,6 +38,7 @@ const FinancialPredictions = () => {
   const fetchPredictions = async () => {
     setLoading(true)
     setError(null)
+    setUnavailable(null)
     
     try {
       const data = await apiServiceGet('api/ai/predictions', { periods: timeframe });
@@ -45,13 +47,24 @@ const FinancialPredictions = () => {
       
       console.log('Predictions data:', data.data); // Debug log
       console.log('Predictions.predictions:', data.data?.predictions); // Debug log
-      setPredictions(data.data)
+      // If backend returns a friendly message indicating no data for prediction
+      if (data?.data && !data.data.predictions && data.data.message) {
+        setUnavailable('Previsões indisponíveis: ' + data.data.message)
+        setPredictions(null)
+      } else {
+        setPredictions(data.data)
+      }
     } catch (err) {
       console.error('Fetch error:', err); // Debug log
-      if (err instanceof ApiError) {
-        setError(err.message || 'Erro ao carregar previsões');
+      // Treat business-logic "insufficient data" as a friendly unavailable state
+      const msg = (err && err.message) ? String(err.message) : ''
+      const isInsufficient = /insufficient data|dados insuficientes/i.test(msg)
+      if (err instanceof ApiError && (err.status === 422 || isInsufficient)) {
+        setUnavailable('Previsões indisponíveis: dados insuficientes para gerar tendência. Faça upload de mais meses de transações.')
+      } else if (err instanceof ApiError) {
+        setError(err.message || 'Erro ao carregar previsões')
       } else {
-        setError('Erro de conexão. Verifique se o servidor está rodando.');
+        setError('Erro de conexão. Verifique se o servidor está rodando.')
       }
     } finally {
       setLoading(false)
@@ -93,14 +106,27 @@ const FinancialPredictions = () => {
         </div>
       </div>
 
-      {error && (
+      {/* Friendly unavailable state (shown instead of error for insufficient data) */}
+      {unavailable && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Previsões indisponíveis</CardTitle>
+            <CardDescription>{unavailable}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-gray-600">Tente adicionar mais transações (ideal: alguns meses de histórico) e volte aqui para ver as projeções.</p>
+          </CardContent>
+        </Card>
+      )}
+
+      {!unavailable && error && (
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
 
-      {predictions && (
+      {!unavailable && predictions && (
         <>
           {/* Resumo Histórico */}
           <Card>

@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog.jsx'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog.jsx'
 import API_CONFIG from '@/config/api.js'
-import { get, put, ApiError } from '@/services/apiService.js'
+import { get, put, remove, ApiError } from '@/services/apiService.js'
 import {
   Search,
   Filter,
@@ -207,10 +207,16 @@ const TransactionsList = ({ transactions: initialTransactions }) => {
   const handleBulkDelete = async () => {
     if (selectedRows.length === 0) return
 
-    // Here you would implement bulk delete logic
-    console.log('Deleting transactions:', selectedRows)
-    // For now, just clear selection
-    setSelectedRows([])
+    try {
+      const res = await remove('api/transactions/bulk', { ids: selectedRows })
+      if (res && res.success) {
+        // Remove deleted transactions from local state
+        setTransactions(prev => prev.filter(t => !selectedRows.includes(t.id)))
+        setSelectedRows([])
+      }
+    } catch (error) {
+      console.error('Erro ao excluir transações:', error instanceof ApiError ? error.message : error)
+    }
   }
 
   // View transaction details
