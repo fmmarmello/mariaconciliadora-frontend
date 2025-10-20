@@ -334,7 +334,7 @@ const XLSXAnalysisTest = () => {
                 <p className="font-medium">Teste de Análise XLSX Concluído com Sucesso!</p>
                 <p className="text-sm">
                   O arquivo <strong>{analysisResult.data.summary.filename}</strong> foi analisado completamente.
-                  A análise determinou que se trata de <strong>{analysisResult.data.file_type}</strong> com base em
+                  A análise determinou que se trata de <strong>{analysisResult.data.file_type}</strong> com base em 
                   {analysisResult.data.analysis.data_quality.overall_completeness.toFixed(1)}% de completude dos dados.
                 </p>
               </div>
