@@ -28,6 +28,8 @@ import {
 } from 'recharts'
 import { get, post, ApiError } from '@/services/apiService';
 import { anomalyDetectionService } from '@/services/anomalyDetectionService.js';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs.jsx'
+import AnomalyManagement from './AnomalyManagement'
 
 const Reconciliation = () => {
   const [pendingRecords, setPendingRecords] = useState([])
@@ -182,6 +184,12 @@ const Reconciliation = () => {
 
   return (
     <div className="space-y-6">
+      <Tabs defaultValue="overview" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="overview">Geral</TabsTrigger>
+          <TabsTrigger value="anomalies">Anomalias</TabsTrigger>
+        </TabsList>
+        <TabsContent value="overview">
       {/* Resumo */}
       {report && (
         <Card>
@@ -403,6 +411,11 @@ const Reconciliation = () => {
           </CardContent>
         </Card>
       )}
+        </TabsContent>
+        <TabsContent value="anomalies">
+          <AnomalyManagement />
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }

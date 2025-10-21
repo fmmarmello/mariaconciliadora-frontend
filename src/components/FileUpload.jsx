@@ -21,13 +21,15 @@ import {
 import API_CONFIG from '@/config/api.js'
 import { post, ApiError } from '@/services/apiService';
 
-const FileUpload = ({ onUploadSuccess }) => {
+const FileUpload = ({ onUploadSuccess, allowedExtensions = ['ofx','qfx','xlsx'] }) => {
   const [dragActive, setDragActive] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [uploadResult, setUploadResult] = useState(null)
   const [error, setError] = useState(null)
   const [duplicateFileError, setDuplicateFileError] = useState(null)
   const fileInputRef = useRef(null)
+
+  const acceptString = allowedExtensions.map((ext) => `.${ext}`).join(',')
 
   // Form validation schema
   const fileUploadSchema = z.object({
@@ -38,9 +40,9 @@ const FileUpload = ({ onUploadSuccess }) => {
       })
       .refine((file) => {
         const extension = file.name.toLowerCase().split('.').pop()
-        return ['ofx', 'qfx', 'xlsx'].includes(extension)
+        return allowedExtensions.includes(extension)
       }, {
-        message: 'Apenas arquivos .ofx, .qfx e .xlsx são suportados.'
+        message: 'Apenas arquivos ' + allowedExtensions.map((ext)=>'.'+ext).join(', ') + ' sao suportados.'
       })
   })
 
@@ -124,9 +126,11 @@ const FileUpload = ({ onUploadSuccess }) => {
           </CardTitle>
           <CardDescription>
             O Maria Conciliadora processa arquivos OFX dos seguintes bancos:
+            {isXlsxAllowed && (
             <p className="text-sm text-gray-600 mt-2">
               Também é possível importar dados financeiros da empresa através de arquivos XLSX.
             </p>
+            )}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -184,7 +188,7 @@ const FileUpload = ({ onUploadSuccess }) => {
                           {...field}
                           ref={fileInputRef}
                           type="file"
-                          accept=".ofx,.qfx,.xlsx"
+                          accept={acceptString}
                           onChange={(e) => {
                             const file = e.target.files?.[0]
                             if (file) {
@@ -323,45 +327,10 @@ const FileUpload = ({ onUploadSuccess }) => {
         </Alert>
       )}
 
-      {/* Instruções */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Como obter seus arquivos?</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <h4 className="font-medium">Arquivos OFX (Bancos)</h4>
-              <p className="text-sm text-gray-600">
-                Acesse o site do seu banco, vá em "Extratos" ou "Movimentação" e procure pela opção de exportar em formato OFX.
-              </p>
-            </div>
-            <div className="space-y-2">
-              <h4 className="font-medium">Arquivos XLSX (Planilhas)</h4>
-              <p className="text-sm text-gray-600">
-                Exporte seus dados financeiros da empresa em formato Excel (.xlsx) com as colunas necessárias.
-              </p>
-            </div>
-          </div>
-          <Alert>
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              <strong>Dica OFX:</strong> O arquivo OFX geralmente está disponível na seção de extratos ou relatórios do seu banco.
-              Procure por "Exportar", "Download" ou "Formato OFX/Money".
-            </AlertDescription>
-          </Alert>
-          <Alert>
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              <strong>Dica XLSX:</strong> Certifique-se de que seu arquivo Excel contém as colunas de data, descrição e valor para
-              que possa ser processado corretamente.
-            </AlertDescription>
-          </Alert>
-        </CardContent>
-      </Card>
     </div>
   )
 }
 
 export default FileUpload
+
 

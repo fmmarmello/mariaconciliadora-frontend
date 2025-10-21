@@ -48,7 +48,6 @@ import FinancialPredictions from './components/FinancialPredictions'
 import Reconciliation from './components/Reconciliation'
 import TestDataDeletion from './components/TestDataDeletion'
 import XLSXAnalysisTest from './components/XLSXAnalysisTest'
-import AnomalyManagement from './components/AnomalyManagement'
 
 function App() {
   const [summary, setSummary] = useState(null)
@@ -242,9 +241,10 @@ function App() {
             <span className="text-gray-400">/</span>
             <span className="text-sm font-medium text-gray-900 capitalize">
               {activeTab === 'overview' ? 'Visão Geral' :
-               activeTab === 'upload' ? 'Upload OFX' :
+               activeTab === 'upload' ? 'Importar Dados' :
                activeTab === 'transactions' ? 'Transações' :
                activeTab === 'financial' ? 'Financeiro' :
+               activeTab === 'insights' ? 'Insights' :
                activeTab === 'predictions' ? 'Previsões' :
                activeTab === 'reconciliation' ? 'Reconciliação' :
                activeTab === 'anomalies' ? 'Anomalias' :
@@ -264,13 +264,13 @@ function App() {
             <div className="hidden lg:block flex-1">
               <TabsList className="grid w-full grid-cols-10 lg:w-[1000px]">
                 <TabsTrigger value="overview">Visão Geral</TabsTrigger>
-                <TabsTrigger value="upload">Upload OFX</TabsTrigger>
+                <TabsTrigger value="upload">Importar Dados</TabsTrigger>
                 <TabsTrigger value="transactions">Transações</TabsTrigger>
                 <TabsTrigger value="financial">Financeiro</TabsTrigger>
+                <TabsTrigger value="insights">Insights</TabsTrigger>
 
                 <TabsTrigger value="predictions">Previsões</TabsTrigger>
                 <TabsTrigger value="reconciliation">Reconciliação</TabsTrigger>
-                <TabsTrigger value="anomalies">Anomalias</TabsTrigger>
                 <TabsTrigger value="xlsx-analysis">Análise XLSX</TabsTrigger>
                 <TabsTrigger value="ai-training">IA Treinamento</TabsTrigger>
                 <TabsTrigger value="test-data">Dados de Teste</TabsTrigger>
@@ -295,12 +295,13 @@ function App() {
                   <div className="grid gap-2 py-4">
                     {[
                       { value: 'overview', label: 'Visão Geral' },
-                      { value: 'upload', label: 'Upload OFX' },
+                      { value: 'upload', label: 'Importar Dados' },
                       { value: 'transactions', label: 'Transações' },
                       { value: 'financial', label: 'Financeiro' },
+                      { value: 'insights', label: 'Insights' },
                       { value: 'predictions', label: 'Previsões' },
                       { value: 'reconciliation', label: 'Reconciliação' },
-                      { value: 'anomalies', label: 'Anomalias' },
+                      
                       { value: 'xlsx-analysis', label: 'Análise XLSX' },
                       { value: 'ai-training', label: 'IA Treinamento' },
                       { value: 'test-data', label: 'Dados de Teste' }
@@ -515,7 +516,7 @@ function App() {
 
           {/* Upload Tab */}
           <TabsContent value="upload">
-            <FileUpload onUploadSuccess={onUploadSuccess} />
+            <ImportData onUploadSuccess={onUploadSuccess} />
           </TabsContent>
 
           {/* XLSX Analysis Test Tab */}
@@ -553,10 +554,7 @@ function App() {
             <Reconciliation />
           </TabsContent>
           
-          {/* Anomaly Management Tab */}
-          <TabsContent value="anomalies">
-            <AnomalyManagement />
-          </TabsContent>
+          
           
           {/* Test Data Deletion Tab */}
           <TabsContent value="test-data">

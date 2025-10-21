@@ -56,7 +56,7 @@ const InsightsPanel = ({ insights: initialInsights }) => {
   const fetchInsights = async () => {
     setLoading(true)
     try {
-      const data = await get('api/insights/general')
+      const data = await get('api/insights')
       
       if (data.success) {
         setInsights(data.data)
@@ -80,7 +80,7 @@ const InsightsPanel = ({ insights: initialInsights }) => {
   const fetchAiInsights = async () => {
     setAiLoading(true)
     try {
-      const data = await get('api/insights/ai')
+      const data = await get('api/ai-insights')
       
       if (data.success) {
         setAiInsights(data.data.ai_insights)
@@ -425,4 +425,3 @@ const InsightsPanel = ({ insights: initialInsights }) => {
 }
 
 export default InsightsPanel
-

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { remove, ApiError } from '@/services/apiService';
+import { get, remove, ApiError } from '@/services/apiService';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -32,14 +32,16 @@ export default function TestDataDeletion() {
   useEffect(() => {
     const checkConfig = async () => {
       try {
-        // We'll check the backend configuration by making a request to the test data endpoint
-        // This is a simple way to determine if the feature is enabled
-        setIsEnabled(true);
+        const res = await get('api/test-data/enabled');
+        if (res && res.success) {
+          setIsEnabled(!!res.enabled);
+        } else {
+          setIsEnabled(false);
+        }
       } catch (error) {
         if (error instanceof ApiError && error.status === 403) {
           setIsEnabled(false);
         } else {
-          // If we can't reach the endpoint or other error, assume it's disabled
           setIsEnabled(false);
         }
       }
