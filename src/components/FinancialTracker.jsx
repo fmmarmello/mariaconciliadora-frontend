@@ -1,5 +1,10 @@
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button.jsx'
+import { Input } from '@/components/ui/input.jsx'
+import { Label } from '@/components/ui/label.jsx'
+import { Textarea } from '@/components/ui/textarea.jsx'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select.jsx'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog.jsx'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs.jsx'
 import { Badge } from '@/components/ui/badge.jsx'
@@ -40,7 +45,7 @@ import {
    BarChart,
    Bar
  } from 'recharts'
-import { get, post, ApiError } from '@/services/apiService.js'
+import { get, post, put, ApiError } from '@/services/apiService.js'
 import FinancialTrackerCorrections from './FinancialTrackerCorrections.jsx'
 
 const FinancialTracker = () => {
@@ -53,6 +58,21 @@ const FinancialTracker = () => {
   const [dragActive, setDragActive] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' })
+  const [showEntryModal, setShowEntryModal] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
+  const [currentEntry, setCurrentEntry] = useState(null)
+  const [formValues, setFormValues] = useState({
+    date: '',
+    description: '',
+    amount: '',
+    category: '',
+    cost_center: '',
+    department: '',
+    project: '',
+    transaction_type: 'expense',
+    justificativa: ''
+  })
+  const [savingEntry, setSavingEntry] = useState(false)
 
   // Cores para os gráficos
   const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#8dd1e1', '#d084d0']
@@ -195,6 +215,73 @@ const FinancialTracker = () => {
     fileInput.onchange = handleFileInput
     fileInput.click()
   }
+
+  const openAddEntry = () => {
+    setIsEditing(false)
+    setCurrentEntry(null)
+    setFormValues({
+      date: '',
+      description: '',
+      amount: '',
+      category: '',
+      cost_center: '',
+      department: '',
+      project: '',
+      transaction_type: 'expense',
+      justificativa: ''
+    })
+    setShowEntryModal(true)
+  }
+
+  const openEditEntry = (entry) => {
+    setIsEditing(true)
+    setCurrentEntry(entry)
+    setFormValues({
+      date: entry.date ? new Date(entry.date).toISOString().split('T')[0] : '',
+      description: entry.description || '',
+      amount: entry.amount != null ? entry.amount : '',
+      category: entry.category || '',
+      cost_center: entry.cost_center || '',
+      department: entry.department || '',
+      project: entry.project || '',
+      transaction_type: entry.transaction_type || 'expense',
+      justificativa: entry.justificativa || ''
+    })
+    setShowEntryModal(true)
+  }
+
+  const handleFormChange = (field, value) => {
+    setFormValues(prev => ({ ...prev, [field]: value }))
+  }
+
+  const saveEntry = async () => {
+    setSavingEntry(true)
+    setError(null)
+    try {
+      const payload = { ...formValues }
+      if (payload.amount !== '' && payload.amount !== null) {
+        payload.amount = parseFloat(payload.amount)
+      }
+
+      if (isEditing && currentEntry?.id) {
+        const res = await put(`api/company-financial/${currentEntry.id}`, payload)
+        if (res && res.success && res.data) {
+          setEntries(prev => prev.map(e => e.id === currentEntry.id ? res.data : e))
+        }
+      } else {
+        const created = await post('api/company-financial', payload)
+        if (created && created.success && created.data) {
+          setEntries(prev => [created.data, ...prev])
+        }
+      }
+      setShowEntryModal(false)
+    } catch (err) {
+      if (err && err.message) setError(`Erro ao salvar entrada: ${err.message}`)
+      console.error('Erro ao salvar entrada:', err)
+    } finally {
+      setSavingEntry(false)
+    }
+  }
 // Função para lidar com o salvamento das correções
   const handleCorrectionsSaved = () => {
     // Atualiza os dados após as correções serem salvas
@@ -256,6 +343,9 @@ const FinancialTracker = () => {
 
   return (
     <div className="space-y-6">
+      <div className="flex justify-end">
+        <Button onClick={openAddEntry} className="bg-blue-600 hover:bg-blue-700">Adicionar Entrada</Button>
+      </div>
       {/* Visão Geral */}
       {summary && (
         <>
@@ -514,6 +604,7 @@ const FinancialTracker = () => {
                       </Button>
                     </TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead>Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -580,6 +671,11 @@ const FinancialTracker = () => {
                           </Badge>
                         )}
                       </TableCell>
+                      <TableCell>
+                        <Button size="sm" variant="outline" onClick={() => openEditEntry(entry)}>
+                          Editar
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -596,6 +692,74 @@ const FinancialTracker = () => {
           onCorrectionsSaved={handleCorrectionsSaved}
         />
       )}
+
+      <Dialog open={showEntryModal} onOpenChange={setShowEntryModal}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{isEditing ? 'Editar Entrada' : 'Adicionar Entrada'}</DialogTitle>
+            <DialogDescription>
+              {isEditing ? 'Atualize os dados da entrada financeira.' : 'Informe os dados da nova entrada financeira.'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Data</Label>
+              <Input type="date" value={formValues.date} onChange={(e) => handleFormChange('date', e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>Tipo</Label>
+              <Select value={formValues.transaction_type} onValueChange={(v) => handleFormChange('transaction_type', v)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="expense">Despesa</SelectItem>
+                  <SelectItem value="income">Receita</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <Label>Descrição</Label>
+              <Input value={formValues.description} onChange={(e) => handleFormChange('description', e.target.value)} placeholder="Descrição" />
+            </div>
+            <div className="space-y-2">
+              <Label>Categoria</Label>
+              <Input value={formValues.category} onChange={(e) => handleFormChange('category', e.target.value)} placeholder="Categoria" />
+            </div>
+            <div className="space-y-2">
+              <Label>Valor</Label>
+              <Input type="number" step="0.01" value={formValues.amount} onChange={(e) => handleFormChange('amount', e.target.value)} placeholder="0.00" />
+            </div>
+            <div className="space-y-2">
+              <Label>Centro de Custo</Label>
+              <Input value={formValues.cost_center} onChange={(e) => handleFormChange('cost_center', e.target.value)} placeholder="Centro de custo" />
+            </div>
+            <div className="space-y-2">
+              <Label>Departamento</Label>
+              <Input value={formValues.department} onChange={(e) => handleFormChange('department', e.target.value)} placeholder="Departamento" />
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <Label>Projeto</Label>
+              <Input value={formValues.project} onChange={(e) => handleFormChange('project', e.target.value)} placeholder="Projeto" />
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <Label>Justificativa (opcional)</Label>
+              <Textarea value={formValues.justificativa} onChange={(e) => handleFormChange('justificativa', e.target.value)} placeholder="Explique o ajuste, se necessário" />
+            </div>
+          </div>
+          {error && (
+            <Alert variant="destructive" className="mt-2">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEntryModal(false)}>Cancelar</Button>
+            <Button onClick={saveEntry} disabled={savingEntry} className="bg-green-600 hover:bg-green-700">
+              {savingEntry ? 'Salvando...' : 'Salvar'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
