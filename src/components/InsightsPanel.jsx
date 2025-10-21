@@ -302,16 +302,23 @@ const InsightsPanel = ({ insights: initialInsights }) => {
           <CardContent>
             <div className="space-y-3">
               {insights.anomalies.anomalous_transactions?.slice(0, 3).map((transaction, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-orange-50 rounded-lg">
-                  <div>
-                    <p className="font-medium text-sm">{transaction.description}</p>
-                    <p className="text-xs text-gray-500">
-                      {new Date(transaction.date).toLocaleDateString('pt-BR')}
-                    </p>
+                <div key={index} className="p-3 bg-orange-50 rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-sm">{transaction.description}</p>
+                      <p className="text-xs text-gray-500">
+                        {transaction.timestamp
+                          ? new Date(transaction.timestamp).toLocaleString('pt-BR')
+                          : new Date(transaction.date).toLocaleDateString('pt-BR')}
+                      </p>
+                    </div>
+                    <div className="font-bold text-orange-600">
+                      R$ {Math.abs(transaction.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </div>
                   </div>
-                  <div className="font-bold text-orange-600">
-                    R$ {Math.abs(transaction.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                  </div>
+                  {transaction.anomaly_reason && (
+                    <p className="text-xs text-orange-700 mt-2">{transaction.anomaly_reason}</p>
+                  )}
                 </div>
               ))}
             </div>

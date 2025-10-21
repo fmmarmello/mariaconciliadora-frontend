@@ -30,6 +30,7 @@ const FileUpload = ({ onUploadSuccess, allowedExtensions = ['ofx','qfx','xlsx'] 
   const fileInputRef = useRef(null)
 
   const acceptString = allowedExtensions.map((ext) => `.${ext}`).join(',')
+  const isXlsxAllowed = Array.isArray(allowedExtensions) && allowedExtensions.includes('xlsx')
 
   // Form validation schema
   const fileUploadSchema = z.object({

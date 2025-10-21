@@ -48,6 +48,7 @@ import FinancialPredictions from './components/FinancialPredictions'
 import Reconciliation from './components/Reconciliation'
 import TestDataDeletion from './components/TestDataDeletion'
 import XLSXAnalysisTest from './components/XLSXAnalysisTest'
+import ImportData from './components/ImportData'
 
 function App() {
   const [summary, setSummary] = useState(null)
@@ -568,4 +569,3 @@ function App() {
 }
 
 export default App
-
