@@ -242,16 +242,14 @@ function App() {
             <span className="text-gray-400">/</span>
             <span className="text-sm font-medium text-gray-900 capitalize">
               {activeTab === 'overview' ? 'Visão Geral' :
-               activeTab === 'upload' ? 'Importar Dados' :
+               activeTab === 'upload' ? 'Importar Extratos' :
+               activeTab === 'reconciliation' ? 'Conciliação' :
                activeTab === 'transactions' ? 'Transações' :
-               activeTab === 'financial' ? 'Financeiro' :
-               activeTab === 'insights' ? 'Insights' :
+               activeTab === 'insights' ? 'Análises' :
+               activeTab === 'financial' ? 'Fluxo de Caixa' :
                activeTab === 'predictions' ? 'Previsões' :
-               activeTab === 'reconciliation' ? 'Reconciliação' :
+               activeTab === 'dev-tools' ? 'Ferramentas (Dev)' :
                activeTab === 'anomalies' ? 'Anomalias' :
-               activeTab === 'xlsx-analysis' ? 'Análise XLSX' :
-               activeTab === 'ai-training' ? 'IA Treinamento' :
-               activeTab === 'test-data' ? 'Dados de Teste' :
                activeTab}
             </span>
           </div>
@@ -263,18 +261,15 @@ function App() {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <div className="flex items-center justify-between">
             <div className="hidden lg:block flex-1">
-              <TabsList className="grid w-full grid-cols-10 lg:w-[1000px]">
+              <TabsList className="grid w-full grid-cols-8 lg:w-[1000px]">
                 <TabsTrigger value="overview">Visão Geral</TabsTrigger>
-                <TabsTrigger value="upload">Importar Dados</TabsTrigger>
+                <TabsTrigger value="upload">Importar Extratos</TabsTrigger>
+                <TabsTrigger value="reconciliation">Conciliação</TabsTrigger>
                 <TabsTrigger value="transactions">Transações</TabsTrigger>
-                <TabsTrigger value="financial">Financeiro</TabsTrigger>
-                <TabsTrigger value="insights">Insights</TabsTrigger>
-
+                <TabsTrigger value="insights">Análises</TabsTrigger>
+                <TabsTrigger value="financial">Fluxo de Caixa</TabsTrigger>
                 <TabsTrigger value="predictions">Previsões</TabsTrigger>
-                <TabsTrigger value="reconciliation">Reconciliação</TabsTrigger>
-                <TabsTrigger value="xlsx-analysis">Análise XLSX</TabsTrigger>
-                <TabsTrigger value="ai-training">IA Treinamento</TabsTrigger>
-                <TabsTrigger value="test-data">Dados de Teste</TabsTrigger>
+                <TabsTrigger value="dev-tools">Ferramentas (Dev)</TabsTrigger>
               </TabsList>
             </div>
 
@@ -296,16 +291,13 @@ function App() {
                   <div className="grid gap-2 py-4">
                     {[
                       { value: 'overview', label: 'Visão Geral' },
-                      { value: 'upload', label: 'Importar Dados' },
+                      { value: 'upload', label: 'Importar Extratos' },
+                      { value: 'reconciliation', label: 'Conciliação' },
                       { value: 'transactions', label: 'Transações' },
-                      { value: 'financial', label: 'Financeiro' },
-                      { value: 'insights', label: 'Insights' },
+                      { value: 'insights', label: 'Análises' },
+                      { value: 'financial', label: 'Fluxo de Caixa' },
                       { value: 'predictions', label: 'Previsões' },
-                      { value: 'reconciliation', label: 'Reconciliação' },
-                      
-                      { value: 'xlsx-analysis', label: 'Análise XLSX' },
-                      { value: 'ai-training', label: 'IA Treinamento' },
-                      { value: 'test-data', label: 'Dados de Teste' }
+                      { value: 'dev-tools', label: 'Ferramentas (Dev)' }
                     ].map((tab) => (
                       <Button
                         key={tab.value}
@@ -520,9 +512,35 @@ function App() {
             <ImportData onUploadSuccess={onUploadSuccess} />
           </TabsContent>
 
-          {/* XLSX Analysis Test Tab */}
-          <TabsContent value="xlsx-analysis">
-            <XLSXAnalysisTest />
+          {/* Dev Tools Tab (with subtabs) */}
+          <TabsContent value="dev-tools">
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Ferramentas (Dev)</CardTitle>
+                  <CardDescription>Utilitários internos para desenvolvimento e testes</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Tabs defaultValue="ai" className="space-y-4">
+                    <TabsList className="grid w-full grid-cols-3 sm:w-auto">
+                      <TabsTrigger value="ai">Regras & IA</TabsTrigger>
+                      <TabsTrigger value="xlsx">Análise XLSX</TabsTrigger>
+                      <TabsTrigger value="test">Dados de Teste</TabsTrigger>
+                    </TabsList>
+
+                    <TabsContent value="ai">
+                      <AITraining />
+                    </TabsContent>
+                    <TabsContent value="xlsx">
+                      <XLSXAnalysisTest />
+                    </TabsContent>
+                    <TabsContent value="test">
+                      <TestDataDeletion />
+                    </TabsContent>
+                  </Tabs>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
           {/* Transactions Tab */}
@@ -540,10 +558,7 @@ function App() {
             <FinancialTracker />
           </TabsContent>
           
-          {/* AI Training Tab */}
-          <TabsContent value="ai-training">
-            <AITraining />
-          </TabsContent>
+          
           
           {/* Predictions Tab */}
           <TabsContent value="predictions">
@@ -555,12 +570,6 @@ function App() {
             <Reconciliation />
           </TabsContent>
           
-          
-          
-          {/* Test Data Deletion Tab */}
-          <TabsContent value="test-data">
-            <TestDataDeletion />
-          </TabsContent>
         </Tabs>
       </main>
     </div>
