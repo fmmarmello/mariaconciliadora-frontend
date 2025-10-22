@@ -90,6 +90,21 @@ const AITraining = () => {
     }
   }
 
+  // Derived metrics for charts
+  const categoryAccuracy = trainingResult?.metrics?.category_accuracy || null
+  const categoryAccuracyData = categoryAccuracy
+    ? Object.entries(categoryAccuracy).map(([name, val]) => ({ name, accuracy: Math.round((val || 0) * 100) }))
+    : [
+        { name: 'Treinado', accuracy: Math.round(accuracy) || 0 }
+      ]
+
+  const trainingTimeMs = trainingResult?.metrics?.training_time_ms
+  const timeData = trainingTimeMs != null
+    ? [{ name: 'Treinamento', time: Math.max(1, Math.round(trainingTimeMs)) }]
+    : [
+        { name: 'Treinamento', time: 0 }
+      ]
+
   return (
     <div className="space-y-6">
       {/* Treinamento do Modelo */}
@@ -138,7 +153,16 @@ const AITraining = () => {
                   <div className="space-y-2">
                     <p className="font-medium">Modelo treinado com sucesso!</p>
                     <div className="text-sm space-y-1">
-                      <p>• Acurácia: {trainingResult.accuracy * 100}%</p>
+                      <p>• Acurácia: {Math.round((trainingResult.accuracy || 0) * 100)}%</p>
+                      {trainingResult.categories_count != null && (
+                        <p>• Categorias: {trainingResult.categories_count}</p>
+                      )}
+                      {trainingResult.training_data_count != null && (
+                        <p>• Amostras de treino: {trainingResult.training_data_count}</p>
+                      )}
+                      {trainingResult.metrics?.training_time_ms != null && (
+                        <p>• Tempo de treinamento: {Math.round(trainingResult.metrics.training_time_ms)} ms</p>
+                      )}
                       <p>• Modelo personalizado ativo</p>
                     </div>
                   </div>
@@ -181,12 +205,7 @@ const AITraining = () => {
             <div>
               <h4 className="font-medium mb-2">Acurácia por Categoria</h4>
               <ResponsiveContainer width="100%" height={200}>
-                <BarChart
-                  data={[
-                    { name: 'Padrão', accuracy: 75 },
-                    { name: 'Treinado', accuracy: 92 }
-                  ]}
-                >
+                <BarChart data={categoryAccuracyData}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="name" />
                   <YAxis />
@@ -197,14 +216,9 @@ const AITraining = () => {
             </div>
             
             <div>
-              <h4 className="font-medium mb-2">Tempo de Processamento</h4>
+              <h4 className="font-medium mb-2">Tempo de Treinamento (ms)</h4>
               <ResponsiveContainer width="100%" height={200}>
-                <BarChart
-                  data={[
-                    { name: 'Padrão', time: 120 },
-                    { name: 'Treinado', time: 85 }
-                  ]}
-                >
+                <BarChart data={timeData}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="name" />
                   <YAxis />
