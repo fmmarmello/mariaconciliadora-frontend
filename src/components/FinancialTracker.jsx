@@ -45,7 +45,8 @@ import {
    BarChart,
    Bar
  } from 'recharts'
-import { get, post, put, ApiError } from '@/services/apiService.js'
+import { get, post, put, remove, ApiError } from '@/services/apiService.js'
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog.jsx'
 import FinancialTrackerCorrections from './FinancialTrackerCorrections.jsx'
 
 const FinancialTracker = () => {
@@ -274,12 +275,36 @@ const FinancialTracker = () => {
           setEntries(prev => [created.data, ...prev])
         }
       }
+      // Atualiza cards de resumo e dados após salvar
+      fetchFinancialSummary()
+      fetchFinancialData()
       setShowEntryModal(false)
     } catch (err) {
       if (err && err.message) setError(`Erro ao salvar entrada: ${err.message}`)
       console.error('Erro ao salvar entrada:', err)
     } finally {
       setSavingEntry(false)
+    }
+  }
+
+  const handleDeleteEntry = async (entryId) => {
+    setError(null)
+    try {
+      const res = await remove(`api/company-financial/${entryId}`)
+      if (res && res.success) {
+        setEntries(prev => prev.filter(e => e.id !== entryId))
+        fetchFinancialSummary()
+      }
+    } catch (err) {
+      if (err instanceof ApiError) {
+        let detailed = err.message
+        if (err.data && err.data.details && Array.isArray(err.data.details)) {
+          detailed = err.data.details.join(', ')
+        }
+        setError(`Erro ao excluir entrada: ${detailed}`)
+      } else {
+        setError('Erro de conexão ao excluir entrada.')
+      }
     }
   }
 // Função para lidar com o salvamento das correções
@@ -672,9 +697,32 @@ const FinancialTracker = () => {
                         )}
                       </TableCell>
                       <TableCell>
-                        <Button size="sm" variant="outline" onClick={() => openEditEntry(entry)}>
-                          Editar
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button size="sm" variant="outline" onClick={() => openEditEntry(entry)}>
+                            Editar
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button size="sm" variant="destructive" className="bg-red-600 hover:bg-red-700">
+                                Excluir
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Tem certeza que deseja excluir esta entrada? Esta ação não pode ser desfeita.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDeleteEntry(entry.id)} className="bg-red-600 hover:bg-red-700">
+                                  Excluir
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
