@@ -42,6 +42,7 @@ import {
    PieChart as RechartsPieChart,
    Pie,
    Cell,
+   Legend,
    BarChart,
    Bar
  } from 'recharts'
@@ -75,8 +76,19 @@ const FinancialTracker = () => {
   })
   const [savingEntry, setSavingEntry] = useState(false)
 
-  // Cores para os gráficos
-  const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#8dd1e1', '#d084d0']
+  // Paleta de cores para os gráficos (alta legibilidade)
+  const COLORS = [
+    '#6366F1', // indigo
+    '#22C55E', // emerald
+    '#F59E0B', // amber
+    '#EF4444', // red
+    '#06B6D4', // cyan
+    '#A855F7', // purple
+    '#84CC16', // lime
+    '#F97316', // orange
+    '#14B8A6', // teal
+    '#3B82F6'  // blue
+  ]
 
   useEffect(() => {
     fetchFinancialData()
@@ -439,25 +451,73 @@ const FinancialTracker = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
+                  <ResponsiveContainer width="100%" height={320}>
                     <RechartsPieChart>
-                      <Pie
-                        data={summary.categories.map(cat => ({
-                          name: cat.name,
-                          value: Math.abs(cat.total)
-                        }))}
-                        cx="50%"
-                        cy="50%"
-                        outerRadius={80}
-                        fill="#8884d8"
-                        dataKey="value"
-                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                      >
-                        {summary.categories.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <RechartsTooltip formatter={(value) => `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} />
+                      {(() => {
+                        // Prepara dados: valores absolutos, ordenados e com total
+                        const data = (summary.categories || [])
+                          .map(cat => ({ name: cat.name, value: Math.abs(cat.total) }))
+                          .sort((a,b) => b.value - a.value)
+                        const total = data.reduce((acc, d) => acc + d.value, 0)
+
+                        // Rótulo customizado: mostra apenas fatias >= 5%
+                        const renderLabel = ({ name, value, percent, cx, cy, midAngle, innerRadius, outerRadius, index }) => {
+                          if (!percent || percent < 0.05) return null
+                          const RADIAN = Math.PI / 180
+                          const radius = innerRadius + (outerRadius - innerRadius) * 0.5
+                          const x = cx + radius * Math.cos(-midAngle * RADIAN)
+                          const y = cy + radius * Math.sin(-midAngle * RADIAN)
+                          const text = `${name} ${(percent * 100).toFixed(0)}%`
+                          return (
+                            <text x={x} y={y} fill="#fff" textAnchor="middle" dominantBaseline="central" style={{ fontSize: 12, fontWeight: 600 }}>
+                              {text}
+                            </text>
+                          )
+                        }
+
+                        return (
+                          <>
+                            <Pie
+                              data={data}
+                              cx="50%"
+                              cy="50%"
+                              innerRadius={60}
+                              outerRadius={110}
+                              dataKey="value"
+                              labelLine={false}
+                              label={renderLabel}
+                              isAnimationActive={false}
+                            >
+                              {data.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                              ))}
+                            </Pie>
+                            {/* Total no centro */}
+                            <text x="50%" y="50%" textAnchor="middle" dominantBaseline="central" style={{ fontSize: 14, fontWeight: 600, fill: '#111827' }}>
+                              Total
+                            </text>
+                            <text x="50%" y="50%" dy={18} textAnchor="middle" dominantBaseline="central" style={{ fontSize: 12, fill: '#6B7280' }}>
+                              {`R$ ${total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+                            </text>
+                            <Legend
+                              layout="horizontal"
+                              verticalAlign="bottom"
+                              align="center"
+                              iconType="circle"
+                              wrapperStyle={{ fontSize: 12, marginTop: 8 }}
+                              formatter={(value) => <span style={{ color: '#374151' }}>{value}</span>}
+                            />
+                            <RechartsTooltip
+                              formatter={(value, name, props) => [
+                                `R$ ${Number(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+                                name
+                              ]}
+                              labelFormatter={() => 'Categoria'}
+                              contentStyle={{ borderRadius: 8, borderColor: '#E5E7EB' }}
+                            />
+                          </>
+                        )
+                      })()}
                     </RechartsPieChart>
                   </ResponsiveContainer>
                 </CardContent>
