@@ -51,6 +51,19 @@ import { normalizeFinancialCategories } from '@/utils/normalizeFinancialCategori
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog.jsx'
 import FinancialTrackerCorrections from './FinancialTrackerCorrections.jsx'
 
+const DEFAULT_COMPANY_CATEGORY = 'Nao categorizado'
+
+const normalizeCategoryLabel = (value) => {
+  if (typeof value !== 'string') return DEFAULT_COMPANY_CATEGORY
+  const trimmed = value.trim()
+  if (!trimmed) return DEFAULT_COMPANY_CATEGORY
+  const lowered = trimmed.toLowerCase()
+  if (['nan', 'none', 'null', 'n/a', 'na'].includes(lowered)) {
+    return DEFAULT_COMPANY_CATEGORY
+  }
+  return trimmed
+}
+
 const FinancialTracker = () => {
   const [entries, setEntries] = useState([])
   const [summary, setSummary] = useState(null)
@@ -68,7 +81,7 @@ const FinancialTracker = () => {
     date: '',
     description: '',
     amount: '',
-    category: '',
+    category: DEFAULT_COMPANY_CATEGORY,
     cost_center: '',
     department: '',
     project: '',
@@ -76,6 +89,19 @@ const FinancialTracker = () => {
     justificativa: ''
   })
   const [savingEntry, setSavingEntry] = useState(false)
+
+  const normalizeEntry = (entry) => {
+    if (!entry || typeof entry !== 'object') return entry
+    return {
+      ...entry,
+      category: normalizeCategoryLabel(entry.category ?? '')
+    }
+  }
+
+  const mapEntriesWithCategory = (items) => {
+    if (!Array.isArray(items)) return []
+    return items.map((item) => normalizeEntry(item))
+  }
 
   // Paleta de cores para os gráficos (alta legibilidade)
   const COLORS = [
@@ -100,7 +126,8 @@ const FinancialTracker = () => {
     try {
       const data = await get('api/company-financial', { limit: 50 })
       if (data.success) {
-        setEntries(data.data.entries)
+        const normalizedEntries = mapEntriesWithCategory(data.data.entries)
+        setEntries(normalizedEntries)
       }
     } catch (error) {
       if (error instanceof ApiError) {
@@ -243,7 +270,7 @@ const FinancialTracker = () => {
       date: '',
       description: '',
       amount: '',
-      category: '',
+      category: DEFAULT_COMPANY_CATEGORY,
       cost_center: '',
       department: '',
       project: '',
@@ -260,7 +287,7 @@ const FinancialTracker = () => {
       date: entry.date ? new Date(entry.date).toISOString().split('T')[0] : '',
       description: entry.description || '',
       amount: entry.amount != null ? entry.amount : '',
-      category: entry.category || '',
+      category: normalizeCategoryLabel(entry.category ?? ''),
       cost_center: entry.cost_center || '',
       department: entry.department || '',
       project: entry.project || '',
@@ -279,6 +306,7 @@ const FinancialTracker = () => {
     setError(null)
     try {
       const payload = { ...formValues }
+      payload.category = normalizeCategoryLabel(payload.category ?? '')
       if (payload.amount !== '' && payload.amount !== null) {
         payload.amount = parseFloat(payload.amount)
       }
@@ -286,12 +314,14 @@ const FinancialTracker = () => {
       if (isEditing && currentEntry?.id) {
         const res = await put(`api/company-financial/${currentEntry.id}`, payload)
         if (res && res.success && res.data) {
-          setEntries(prev => prev.map(e => e.id === currentEntry.id ? res.data : e))
+          const updatedEntry = normalizeEntry(res.data)
+          setEntries(prev => prev.map(e => (e.id === currentEntry.id ? updatedEntry : e)))
         }
       } else {
         const created = await post('api/company-financial', payload)
         if (created && created.success && created.data) {
-          setEntries(prev => [created.data, ...prev])
+          const normalizedCreated = normalizeEntry(created.data)
+          setEntries(prev => [normalizedCreated, ...prev])
         }
       }
       // Atualiza cards de resumo e dados após salvar
@@ -447,12 +477,12 @@ const FinancialTracker = () => {
           </div>
 
           {/* Gráficos */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6"> 
             {/* Gráfico de Categorias */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
-                  <PieChart className="h-5 w-5 mr-2" />
+                  <PieChart className="h-5 w-5 mr-2" /> PELEZINHO
                   Gastos por Categoria
                 </CardTitle>
               </CardHeader>
