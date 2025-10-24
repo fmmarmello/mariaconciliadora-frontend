@@ -408,7 +408,7 @@ function App() {
                     <Card>
                       <CardHeader>
                         <CardTitle className="flex items-center">
-                          <PieChart className="h-5 w-5 mr-2" />
+                          <PieChart className="h-5 w-5 mr-2" />CESAR AYHGYSTI
                           Gastos por Categoria
                         </CardTitle>
                       </CardHeader>
