@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Button } from '@/components/ui/button.jsx'
 import { Input } from '@/components/ui/input.jsx'
 import { Label } from '@/components/ui/label.jsx'
@@ -47,6 +47,7 @@ import {
    Bar
  } from 'recharts'
 import { get, post, put, remove, ApiError } from '@/services/apiService.js'
+import { normalizeFinancialCategories } from '@/utils/normalizeFinancialCategories.js'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog.jsx'
 import FinancialTrackerCorrections from './FinancialTrackerCorrections.jsx'
 
@@ -121,6 +122,7 @@ const FinancialTracker = () => {
     try {
       const data = await get('api/company-financial/summary')
       if (data.success) {
+        console.debug('[FinancialTracker] summary.categories payload:', data.data?.categories)
         setSummary(data.data)
       }
     } catch (error) {
@@ -140,6 +142,11 @@ const FinancialTracker = () => {
       setLoading(false)
     }
   }
+
+  const normalizedCategories = useMemo(
+    () => normalizeFinancialCategories(summary?.categories),
+    [summary?.categories]
+  )
 
   const handleDrag = (e) => {
     e.preventDefault()
@@ -442,26 +449,28 @@ const FinancialTracker = () => {
           {/* Gráficos */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Gráfico de Categorias */}
-            {summary.categories && summary.categories.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <PieChart className="h-5 w-5 mr-2" />
-                    Gastos por Categoria
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <PieChart className="h-5 w-5 mr-2" />
+                  Gastos por Categoria
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {normalizedCategories.length === 0 ? (
+                  <div className="flex h-[320px] items-center justify-center text-sm font-medium text-muted-foreground">
+                    sem dados
+                  </div>
+                ) : (
                   <ResponsiveContainer width="100%" height={320}>
                     <RechartsPieChart>
                       {(() => {
                         // Prepara dados: valores absolutos, ordenados e com total
-                        const data = (summary.categories || [])
-                          .map(cat => ({ name: cat.name, value: Math.abs(cat.total) }))
-                          .sort((a,b) => b.value - a.value)
+                        const data = [...normalizedCategories].sort((a, b) => b.value - a.value)
                         const total = data.reduce((acc, d) => acc + d.value, 0)
 
                         // Rótulo customizado: mostra apenas fatias >= 5%
-                        const renderLabel = ({ name, value, percent, cx, cy, midAngle, innerRadius, outerRadius, index }) => {
+                        const renderLabel = ({ name, value, percent, cx, cy, midAngle, innerRadius, outerRadius }) => {
                           if (!percent || percent < 0.05) return null
                           const RADIAN = Math.PI / 180
                           const radius = innerRadius + (outerRadius - innerRadius) * 0.5
@@ -508,7 +517,7 @@ const FinancialTracker = () => {
                               formatter={(value) => <span style={{ color: '#374151' }}>{value}</span>}
                             />
                             <RechartsTooltip
-                              formatter={(value, name, props) => [
+                              formatter={(value, name) => [
                                 `R$ ${Number(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
                                 name
                               ]}
@@ -520,9 +529,9 @@ const FinancialTracker = () => {
                       })()}
                     </RechartsPieChart>
                   </ResponsiveContainer>
-                </CardContent>
-              </Card>
-            )}
+                )}
+              </CardContent>
+            </Card>
 
             {/* Últimas Entradas */}
             <Card>
