@@ -41,6 +41,9 @@ const TransactionsList = ({ transactions: initialTransactions }) => {
   const [selectedRows, setSelectedRows] = useState([])
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' })
   const [viewingTransaction, setViewingTransaction] = useState(null)
+  // Server pagination tracking (for non-search views)
+  const [apiPage, setApiPage] = useState(0)
+  const [apiTotalPages, setApiTotalPages] = useState(1)
   const [filters, setFilters] = useState({
     search: '',
     bank: 'all',
@@ -56,26 +59,131 @@ const TransactionsList = ({ transactions: initialTransactions }) => {
     if (initialTransactions) {
       setTransactions(initialTransactions)
     } else {
-      fetchTransactions()
+      fetchTransactions('reset')
     }
   }, [initialTransactions])
+
+  // Refetch from server when filters change (debounced)
+  useEffect(() => {
+    if (initialTransactions) return
+    const handle = setTimeout(() => {
+      // Reset aggregation when filters change
+      setApiPage(0)
+      setApiTotalPages(1)
+      fetchTransactions('reset')
+    }, 300)
+    return () => clearTimeout(handle)
+  }, [filters.bank, filters.category, filters.type, filters.startDate, filters.endDate])
 
   useEffect(() => {
     applyFilters()
   }, [transactions, filters, sortConfig])
 
-  const fetchTransactions = async () => {
+  // Generic, type-aware comparator for sorting
+  const compareByKey = (a, b, key, direction = 'asc') => {
+    let aValue = a?.[key]
+    let bValue = b?.[key]
+
+    // Normalize undefined/null
+    const dir = direction === 'asc' ? 1 : -1
+    const isNilA = aValue === undefined || aValue === null || aValue === ''
+    const isNilB = bValue === undefined || bValue === null || bValue === ''
+    if (isNilA && isNilB) return 0
+    if (isNilA) return 1 * dir // push empty values to the end
+    if (isNilB) return -1 * dir
+
+    // Custom numeric handling
+    if (key === 'amount') {
+      const na = Math.abs(Number(aValue))
+      const nb = Math.abs(Number(bValue))
+      if (na < nb) return -1 * dir
+      if (na > nb) return 1 * dir
+      return 0
+    }
+
+    // Dates: accept Date objects or ISO/date strings
+    if (key === 'date' || key === 'created_at' || key === 'timestamp') {
+      const ta = (aValue instanceof Date) ? aValue.getTime() : Date.parse(String(aValue))
+      const tb = (bValue instanceof Date) ? bValue.getTime() : Date.parse(String(bValue))
+      const aIsNaN = Number.isNaN(ta)
+      const bIsNaN = Number.isNaN(tb)
+      if (aIsNaN && bIsNaN) return 0
+      if (aIsNaN) return 1 * dir
+      if (bIsNaN) return -1 * dir
+      if (ta < tb) return -1 * dir
+      if (ta > tb) return 1 * dir
+      return 0
+    }
+
+    // Plain numbers
+    if (typeof aValue === 'number' && typeof bValue === 'number') {
+      if (aValue < bValue) return -1 * dir
+      if (aValue > bValue) return 1 * dir
+      return 0
+    }
+
+    // Strings (case-insensitive + numeric aware)
+    if (typeof aValue === 'string' && typeof bValue === 'string') {
+      return aValue.localeCompare(bValue, undefined, { sensitivity: 'base', numeric: true }) * dir
+    }
+
+    // Fallback: coerce to string and compare
+    const sa = String(aValue)
+    const sb = String(bValue)
+    return sa.localeCompare(sb, undefined, { sensitivity: 'base', numeric: true }) * dir
+  }
+
+  const fetchTransactions = async (mode = 'reset') => {
     setLoading(true)
     try {
-      const queryParams = new URLSearchParams({
-        limit: 100,
-        offset: 0
-      })
+      const fetchAll = true
+      const queryParams = new URLSearchParams()
+      // Page to fetch
+      const nextPage = fetchAll ? 1 : (mode === 'append' ? (apiPage + 1) : 1)
+      queryParams.set('page', String(nextPage))
+      // Increase page size for searches to reduce hops
+      const hasSearch = !!(filters.search && filters.search.trim())
+      if (fetchAll) {
+        queryParams.set('limit', 'all')
+      } else {
+        queryParams.set('limit', hasSearch ? '1000' : '100')
+      }
 
-      const data = await get('api/transactions', queryParams.toString())
-      
+      // Server-side filters
+      if (hasSearch) {
+        const term = filters.search.trim()
+        queryParams.set('q', term)
+        // Also search in category text
+        queryParams.set('category_q', term)
+      }
+      if (filters.bank && filters.bank !== 'all') {
+        queryParams.set('bank', filters.bank)
+      }
+      if (filters.category && filters.category !== 'all') {
+        queryParams.set('category', filters.category)
+      }
+      if (filters.type && filters.type !== 'all') {
+        queryParams.set('type', filters.type)
+      }
+      if (filters.startDate) {
+        queryParams.set('start_date', filters.startDate)
+      }
+      if (filters.endDate) {
+        queryParams.set('end_date', filters.endDate)
+      }
+
+      // Convert URLSearchParams into a plain object so apiService can append them correctly
+      const data = await get('api/transactions', Object.fromEntries(queryParams))
       if (data.success) {
-        setTransactions(data.data.transactions)
+        const list = data.data.transactions || []
+        const totalPages = data.data.total_pages || 1
+        if (mode === 'append' && !fetchAll) {
+          setTransactions(prev => [...prev, ...list])
+        } else {
+          setTransactions(list)
+        }
+        setApiPage(nextPage)
+        setApiTotalPages(totalPages)
       }
     } catch (error) {
       if (error instanceof ApiError) {
@@ -92,11 +200,23 @@ const TransactionsList = ({ transactions: initialTransactions }) => {
   const applyFilters = () => {
     let filtered = [...transactions]
 
-    // Filtro de busca
-    if (filters.search) {
-      filtered = filtered.filter(t =>
-        t.description.toLowerCase().includes(filters.search.toLowerCase())
-      )
+    // Filtro de busca: quando usamos server-side q, não precisamos refiltrar por descrição.
+    // Mantemos como no-op para não reduzir indevidamente resultados já filtrados no servidor.
+    // if (filters.search) {
+    //   filtered = filtered.filter(t =>
+    //     t.description.toLowerCase().includes(filters.search.toLowerCase())
+    //   )
+    // }
+
+    // Busca local quando transações vêm por props
+    const isPropDriven = false && !!initialTransactions
+    if (isPropDriven && filters.search && filters.search.trim()) {
+      const term = filters.search.trim().toLowerCase()
+      filtered = filtered.filter(t => {
+        const desc = (t.description || '').toLowerCase()
+        const cat = (t.category || '').toLowerCase()
+        return desc.includes(term) || cat.includes(term)
+      })
     }
 
     // Filtro por banco
@@ -124,34 +244,18 @@ const TransactionsList = ({ transactions: initialTransactions }) => {
 
     // Apply sorting
     if (sortConfig.key) {
-      filtered.sort((a, b) => {
-        let aValue = a[sortConfig.key]
-        let bValue = b[sortConfig.key]
-
-        // Handle different data types
-        if (sortConfig.key === 'amount') {
-          aValue = Math.abs(aValue)
-          bValue = Math.abs(bValue)
-        } else if (sortConfig.key === 'date') {
-          aValue = new Date(aValue)
-          bValue = new Date(bValue)
-        } else if (typeof aValue === 'string') {
-          aValue = aValue.toLowerCase()
-          bValue = bValue.toLowerCase()
-        }
-
-        if (aValue < bValue) {
-          return sortConfig.direction === 'asc' ? -1 : 1
-        }
-        if (aValue > bValue) {
-          return sortConfig.direction === 'asc' ? 1 : -1
-        }
-        return 0
-      })
+      filtered.sort((a, b) => compareByKey(a, b, sortConfig.key, sortConfig.direction))
     }
 
     setFilteredTransactions(filtered)
     setCurrentPage(1)
+  }
+
+  // Dispara busca no backend com o termo digitado
+  const handleServerSearch = () => {
+    setApiPage(0)
+    setApiTotalPages(1)
+    fetchTransactions('reset')
   }
 
   const handleFilterChange = (key, value) => {
@@ -316,10 +420,12 @@ const TransactionsList = ({ transactions: initialTransactions }) => {
                   placeholder="Buscar por descrição..."
                   value={filters.search}
                   onChange={(e) => handleFilterChange('search', e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleServerSearch() }}
                   className="pl-10"
                   data-testid="search-input"
                 />
               </div>
+              {/* Botão Buscar movido para ao lado de "Limpar Filtros" no rodapé dos filtros */}
             </div>
 
             {/* Banco */}
@@ -424,6 +530,9 @@ const TransactionsList = ({ transactions: initialTransactions }) => {
                   </AlertDialogContent>
                 </AlertDialog>
               )}
+              <Button onClick={handleServerSearch} disabled={loading} data-testid="search-button">
+                Buscar
+              </Button>
               <Button variant="outline" onClick={clearFilters} data-testid="clear-filters-button">
                 Limpar Filtros
               </Button>
@@ -689,6 +798,14 @@ const TransactionsList = ({ transactions: initialTransactions }) => {
                   ))}
                 </TableBody>
               </Table>
+              {/* Load more (non-search views) */}
+              {!(filters.search && filters.search.trim()) && apiPage < apiTotalPages && (
+                <div className="flex justify-center mt-4">
+                  <Button variant="outline" onClick={() => fetchTransactions('append')} disabled={loading}>
+                    Carregar mais
+                  </Button>
+                </div>
+              )}
             </div>
           ) : (
             <div className="text-center py-8">
@@ -729,4 +846,6 @@ const TransactionsList = ({ transactions: initialTransactions }) => {
 }
 
 export default TransactionsList
+
+
 

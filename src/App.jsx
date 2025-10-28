@@ -94,7 +94,7 @@ function App() {
 
   const fetchTransactions = async () => {
     try {
-      const response = await fetch(API_CONFIG.getApiUrl('api/transactions?limit=50'))
+      const response = await fetch(API_CONFIG.getApiUrl('api/transactions?limit=all'))
       const data = await response.json()
       if (data.success) {
         setTransactions(data.data.transactions)
