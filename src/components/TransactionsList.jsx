@@ -62,7 +62,7 @@ const TransactionsList = ({ transactions: initialTransactions }) => {
 
   useEffect(() => {
     applyFilters()
-  }, [transactions, filters])
+  }, [transactions, filters, sortConfig])
 
   const fetchTransactions = async () => {
     setLoading(true)

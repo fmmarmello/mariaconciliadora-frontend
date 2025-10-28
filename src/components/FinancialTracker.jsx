@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Button } from '@/components/ui/button.jsx'
 import { Input } from '@/components/ui/input.jsx'
 import { Label } from '@/components/ui/label.jsx'
@@ -47,8 +47,22 @@ import {
    Bar
  } from 'recharts'
 import { get, post, put, remove, ApiError } from '@/services/apiService.js'
+import { normalizeFinancialCategories } from '@/utils/normalizeFinancialCategories.js'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog.jsx'
 import FinancialTrackerCorrections from './FinancialTrackerCorrections.jsx'
+
+const DEFAULT_COMPANY_CATEGORY = 'Nao categorizado'
+
+const normalizeCategoryLabel = (value) => {
+  if (typeof value !== 'string') return DEFAULT_COMPANY_CATEGORY
+  const trimmed = value.trim()
+  if (!trimmed) return DEFAULT_COMPANY_CATEGORY
+  const lowered = trimmed.toLowerCase()
+  if (['nan', 'none', 'null', 'n/a', 'na'].includes(lowered)) {
+    return DEFAULT_COMPANY_CATEGORY
+  }
+  return trimmed
+}
 
 const FinancialTracker = () => {
   const [entries, setEntries] = useState([])
@@ -67,7 +81,7 @@ const FinancialTracker = () => {
     date: '',
     description: '',
     amount: '',
-    category: '',
+    category: DEFAULT_COMPANY_CATEGORY,
     cost_center: '',
     department: '',
     project: '',
@@ -75,6 +89,19 @@ const FinancialTracker = () => {
     justificativa: ''
   })
   const [savingEntry, setSavingEntry] = useState(false)
+
+  const normalizeEntry = (entry) => {
+    if (!entry || typeof entry !== 'object') return entry
+    return {
+      ...entry,
+      category: normalizeCategoryLabel(entry.category ?? '')
+    }
+  }
+
+  const mapEntriesWithCategory = (items) => {
+    if (!Array.isArray(items)) return []
+    return items.map((item) => normalizeEntry(item))
+  }
 
   // Paleta de cores para os gráficos (alta legibilidade)
   const COLORS = [
@@ -99,7 +126,8 @@ const FinancialTracker = () => {
     try {
       const data = await get('api/company-financial', { limit: 50 })
       if (data.success) {
-        setEntries(data.data.entries)
+        const normalizedEntries = mapEntriesWithCategory(data.data.entries)
+        setEntries(normalizedEntries)
       }
     } catch (error) {
       if (error instanceof ApiError) {
@@ -121,6 +149,7 @@ const FinancialTracker = () => {
     try {
       const data = await get('api/company-financial/summary')
       if (data.success) {
+        console.debug('[FinancialTracker] summary.categories payload:', data.data?.categories)
         setSummary(data.data)
       }
     } catch (error) {
@@ -140,6 +169,11 @@ const FinancialTracker = () => {
       setLoading(false)
     }
   }
+
+  const normalizedCategories = useMemo(
+    () => normalizeFinancialCategories(summary?.categories),
+    [summary?.categories]
+  )
 
   const handleDrag = (e) => {
     e.preventDefault()
@@ -236,7 +270,7 @@ const FinancialTracker = () => {
       date: '',
       description: '',
       amount: '',
-      category: '',
+      category: DEFAULT_COMPANY_CATEGORY,
       cost_center: '',
       department: '',
       project: '',
@@ -253,7 +287,7 @@ const FinancialTracker = () => {
       date: entry.date ? new Date(entry.date).toISOString().split('T')[0] : '',
       description: entry.description || '',
       amount: entry.amount != null ? entry.amount : '',
-      category: entry.category || '',
+      category: normalizeCategoryLabel(entry.category ?? ''),
       cost_center: entry.cost_center || '',
       department: entry.department || '',
       project: entry.project || '',
@@ -272,6 +306,7 @@ const FinancialTracker = () => {
     setError(null)
     try {
       const payload = { ...formValues }
+      payload.category = normalizeCategoryLabel(payload.category ?? '')
       if (payload.amount !== '' && payload.amount !== null) {
         payload.amount = parseFloat(payload.amount)
       }
@@ -279,12 +314,14 @@ const FinancialTracker = () => {
       if (isEditing && currentEntry?.id) {
         const res = await put(`api/company-financial/${currentEntry.id}`, payload)
         if (res && res.success && res.data) {
-          setEntries(prev => prev.map(e => e.id === currentEntry.id ? res.data : e))
+          const updatedEntry = normalizeEntry(res.data)
+          setEntries(prev => prev.map(e => (e.id === currentEntry.id ? updatedEntry : e)))
         }
       } else {
         const created = await post('api/company-financial', payload)
         if (created && created.success && created.data) {
-          setEntries(prev => [created.data, ...prev])
+          const normalizedCreated = normalizeEntry(created.data)
+          setEntries(prev => [normalizedCreated, ...prev])
         }
       }
       // Atualiza cards de resumo e dados após salvar
@@ -440,28 +477,30 @@ const FinancialTracker = () => {
           </div>
 
           {/* Gráficos */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6"> 
             {/* Gráfico de Categorias */}
-            {summary.categories && summary.categories.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <PieChart className="h-5 w-5 mr-2" />
-                    Gastos por Categoria
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <PieChart className="h-5 w-5 mr-2" /> PELEZINHO
+                  Gastos por Categoria
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {normalizedCategories.length === 0 ? (
+                  <div className="flex h-[320px] items-center justify-center text-sm font-medium text-muted-foreground">
+                    sem dados
+                  </div>
+                ) : (
                   <ResponsiveContainer width="100%" height={320}>
                     <RechartsPieChart>
                       {(() => {
                         // Prepara dados: valores absolutos, ordenados e com total
-                        const data = (summary.categories || [])
-                          .map(cat => ({ name: cat.name, value: Math.abs(cat.total) }))
-                          .sort((a,b) => b.value - a.value)
+                        const data = [...normalizedCategories].sort((a, b) => b.value - a.value)
                         const total = data.reduce((acc, d) => acc + d.value, 0)
 
                         // Rótulo customizado: mostra apenas fatias >= 5%
-                        const renderLabel = ({ name, value, percent, cx, cy, midAngle, innerRadius, outerRadius, index }) => {
+                        const renderLabel = ({ name, value, percent, cx, cy, midAngle, innerRadius, outerRadius }) => {
                           if (!percent || percent < 0.05) return null
                           const RADIAN = Math.PI / 180
                           const radius = innerRadius + (outerRadius - innerRadius) * 0.5
@@ -508,7 +547,7 @@ const FinancialTracker = () => {
                               formatter={(value) => <span style={{ color: '#374151' }}>{value}</span>}
                             />
                             <RechartsTooltip
-                              formatter={(value, name, props) => [
+                              formatter={(value, name) => [
                                 `R$ ${Number(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
                                 name
                               ]}
@@ -520,9 +559,9 @@ const FinancialTracker = () => {
                       })()}
                     </RechartsPieChart>
                   </ResponsiveContainer>
-                </CardContent>
-              </Card>
-            )}
+                )}
+              </CardContent>
+            </Card>
 
             {/* Últimas Entradas */}
             <Card>
