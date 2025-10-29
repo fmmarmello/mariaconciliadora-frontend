@@ -58,7 +58,18 @@ function App() {
   const [activeTab, setActiveTab] = useState('overview')
 
   // Cores para os gráficos
-  const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#8dd1e1', '#d084d0']
+  const COLORS = [
+    '#1f77b4',
+    '#ff7f0e',
+    '#2ca02c',
+    '#d62728',
+    '#9467bd',
+    '#8c564b',
+    '#e377c2',
+    '#7f7f7f',
+    '#bcbd22',
+    '#17becf'
+  ]
 
   useEffect(() => {
     fetchSummary()
@@ -422,9 +433,11 @@ function App() {
                               }))}
                               cx="50%"
                               cy="50%"
-                              outerRadius={80}
-                              fill="#8884d8"
+                              innerRadius={50}
+                              outerRadius={90}
+                              paddingAngle={3}
                               dataKey="value"
+                              labelLine={false}
                               label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                             >
                               {summary.categories.map((entry, index) => (
