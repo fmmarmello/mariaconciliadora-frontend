@@ -70,6 +70,12 @@ function App() {
     '#bcbd22',
     '#17becf'
   ]
+  const formatCurrency = (value) =>
+    `R$ ${(Number(value) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+  const categoryData = summary?.categories?.map(cat => ({
+    name: cat.name,
+    value: Math.abs(cat.total)
+  })) ?? []
 
   useEffect(() => {
     fetchSummary()
@@ -415,7 +421,7 @@ function App() {
                 {/* Gráficos */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {/* Gráfico de Categorias */}
-                  {summary.categories && summary.categories.length > 0 && (
+                  {categoryData.length > 0 && (
                     <Card>
                       <CardHeader>
                         <CardTitle className="flex items-center">
@@ -427,10 +433,7 @@ function App() {
                         <ResponsiveContainer width="100%" height={300}>
                           <RechartsPieChart>
                             <Pie
-                              data={summary.categories.map(cat => ({
-                                name: cat.name,
-                                value: Math.abs(cat.total)
-                              }))}
+                              data={categoryData}
                               cx="50%"
                               cy="50%"
                               innerRadius={50}
@@ -438,15 +441,37 @@ function App() {
                               paddingAngle={3}
                               dataKey="value"
                               labelLine={false}
-                              label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                             >
-                              {summary.categories.map((entry, index) => (
+                              {categoryData.map((entry, index) => (
                                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                               ))}
                             </Pie>
-                            <RechartsTooltip formatter={(value) => `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} />
+                            <RechartsTooltip
+                              formatter={(value, name) => [formatCurrency(value), name]}
+                            />
                           </RechartsPieChart>
                         </ResponsiveContainer>
+                        <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                          {categoryData.map((category, index) => (
+                            <div
+                              key={category.name}
+                              className="flex items-center justify-between rounded-xl border border-slate-100 bg-white/80 px-4 py-3 shadow-sm backdrop-blur"
+                            >
+                              <div className="flex items-center gap-3">
+                                <span
+                                  className="h-3 w-3 rounded-full"
+                                  style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                                />
+                                <span className="text-sm font-medium text-slate-700">
+                                  {category.name}
+                                </span>
+                              </div>
+                              <span className="text-sm font-semibold text-slate-900">
+                                {formatCurrency(category.value)}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
                       </CardContent>
                     </Card>
                   )}
