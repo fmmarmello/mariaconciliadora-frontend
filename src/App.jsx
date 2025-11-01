@@ -498,7 +498,7 @@ function App() {
                     </CardContent>
                   </Card>
                   )}
-                </div>
+                
 
                 {/* Transações Recentes */}
                 {summary.recent_transactions && summary.recent_transactions.length > 0 && (
@@ -528,6 +528,7 @@ function App() {
                     </CardContent>
                   </Card>
                 )}
+                </div>
               </>
             )}
 
