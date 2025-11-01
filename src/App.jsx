@@ -477,6 +477,7 @@ function App() {
                   )}
 
                   {/* Bancos */}
+                  {summary.banks && summary.banks.length > 1 && (
                   <Card>
                     <CardHeader>
                       <CardTitle className="flex items-center">
@@ -496,6 +497,7 @@ function App() {
                       </ResponsiveContainer>
                     </CardContent>
                   </Card>
+                  )}
                 </div>
 
                 {/* Transações Recentes */}

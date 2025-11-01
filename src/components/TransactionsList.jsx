@@ -386,7 +386,7 @@ const TransactionsList = ({ transactions: initialTransactions }) => {
       'educacao': 'bg-purple-100 text-purple-800',
       'lazer': 'bg-pink-100 text-pink-800',
       'servicos': 'bg-green-100 text-green-800',
-      'multa': 'bg-rose-100 text-rose-800',
+      'Juros/Multa': 'bg-rose-100 text-rose-800',
       'vestuario': 'bg-yellow-100 text-yellow-800',
       'investimento': 'bg-indigo-100 text-indigo-800',
       'transferencia': 'bg-gray-100 text-gray-800',
